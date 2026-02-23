@@ -1,0 +1,8 @@
+{
+  "name": "@adventureland/shared",
+  "version": "1.0.0",
+  "description": "Adventureland Chief of Staff - Shared Types and Constants",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js"
+}

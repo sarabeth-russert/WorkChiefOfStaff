@@ -1,0 +1,26 @@
+{
+  "name": "adventureland-chief-of-staff",
+  "version": "1.0.0",
+  "description": "A self-hosted Chief of Staff system with vintage Adventureland theme",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pm2 start ecosystem.config.js && pm2 logs",
+    "stop": "pm2 stop all",
+    "restart": "pm2 restart all",
+    "delete": "pm2 delete all"
+  },
+  "keywords": [
+    "chief-of-staff",
+    "ai-agents",
+    "developer-tools",
+    "adventureland"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "pm2": "^5.3.0"
+  }
+}

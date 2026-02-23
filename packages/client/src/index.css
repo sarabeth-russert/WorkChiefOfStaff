@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cream text-vintage-text font-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-poster;
+  }
+}
+
+@layer components {
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Vintage paper texture overlay */
+  .paper-texture {
+    position: relative;
+  }
+
+  .paper-texture::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  /* Canvas texture for agent cards */
+  .canvas-texture {
+    background-image:
+      radial-gradient(ellipse at center, transparent 0%, rgba(58, 50, 38, 0.1) 100%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.4'/%3E%3C/svg%3E");
+  }
+
+  /* Rough border effect */
+  .rough-border {
+    border: 3px solid currentColor;
+    box-shadow:
+      0 0 0 1px currentColor inset,
+      3px 3px 0px rgba(58, 50, 38, 0.3);
+  }
+
+  /* Vintage button */
+  .btn-vintage {
+    @apply px-6 py-3 font-ui text-lg uppercase tracking-wide;
+    @apply bg-terracotta text-cream border-3 border-terracotta-dark;
+    @apply shadow-vintage hover:shadow-vintage-hover;
+    @apply transition-all duration-150;
+    @apply relative top-0 left-0;
+  }
+
+  .btn-vintage:hover {
+    @apply -top-1 -left-1;
+  }
+
+  .btn-vintage:active {
+    @apply top-1 left-1 shadow-vintage-pressed;
+  }
+}

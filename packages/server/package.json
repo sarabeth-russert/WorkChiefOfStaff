@@ -1,0 +1,25 @@
+{
+  "name": "@adventureland/server",
+  "version": "1.0.0",
+  "description": "Adventureland Chief of Staff - Server",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.996.0",
+    "@anthropic-ai/sdk": "^0.9.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "simple-git": "^3.21.0",
+    "socket.io": "^4.6.0",
+    "winston": "^3.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
