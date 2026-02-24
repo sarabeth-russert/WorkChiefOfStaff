@@ -476,6 +476,11 @@ You can also fetch and analyze web URLs when a user provides a URL or asks you t
         }
       }
 
+      // Fix spacing after periods in final response
+      if (finalResponse) {
+        finalResponse = finalResponse.replace(/\.([A-Z])/g, '. $1');
+      }
+
       logger.info(`${this.name} completed task`, {
         type: this.type,
         responseLength: finalResponse.length,
@@ -586,7 +591,11 @@ You can also fetch and analyze web URLs when a user provides a URL or asks you t
 
           if (event.type === 'content_block_delta') {
             if (event.delta.type === 'text_delta') {
-              const chunk = event.delta.text;
+              let chunk = event.delta.text;
+
+              // Fix spacing after periods - ensure there's a space after period before capital letter
+              chunk = chunk.replace(/\.([A-Z])/g, '. $1');
+
               textBlock += chunk;
               finalResponse += chunk;
 
@@ -683,15 +692,18 @@ You can also fetch and analyze web URLs when a user provides a URL or asks you t
               logger.info(`${this.name} ❌ NO TOOL USE - returning text only`);
               continueLoop = false;
 
+              // Fix spacing after periods in final response
+              const cleanedResponse = finalResponse.replace(/\.([A-Z])/g, '. $1');
+
               logger.info(`${this.name} completed streaming task`, {
                 type: this.type,
-                responseLength: finalResponse.length
+                responseLength: cleanedResponse.length
               });
 
               if (onChunk) {
                 onChunk({
                   type: 'complete',
-                  data: finalResponse,
+                  data: cleanedResponse,
                   agent: {
                     name: this.name,
                     type: this.type,
@@ -699,6 +711,9 @@ You can also fetch and analyze web URLs when a user provides a URL or asks you t
                   }
                 });
               }
+
+              // Update finalResponse for return value
+              finalResponse = cleanedResponse;
             }
           }
         }

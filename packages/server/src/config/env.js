@@ -29,17 +29,18 @@ export function validateEnv() {
   // 3. IAM role (when running on EC2/ECS/Lambda)
   // 4. Local Bedrock configuration
 
-  // No hard requirements - AWS SDK handles credential chain
-  // Just log the configuration being used
-  const credentialSource = process.env.AWS_ACCESS_KEY_ID ? 'Environment Variables' :
-                           process.env.AWS_PROFILE ? `AWS Profile (${process.env.AWS_PROFILE})` :
-                           'Default Credential Chain (IAM Role or ~/.aws/credentials)';
+  // Only log AWS config if explicitly configured (for debugging)
+  if (process.env.SHOW_AWS_CONFIG === 'true') {
+    const credentialSource = process.env.AWS_ACCESS_KEY_ID ? 'Environment Variables' :
+                             process.env.AWS_PROFILE ? `AWS Profile (${process.env.AWS_PROFILE})` :
+                             'Default Credential Chain (IAM Role or ~/.aws/credentials)';
 
-  console.log(`AWS Bedrock Configuration:
-  - Region: ${config.aws.region}
-  - Model: ${config.aws.modelId}
-  - Credentials: ${credentialSource}
-  `);
+    console.log(`AWS Bedrock Configuration:
+    - Region: ${config.aws.region}
+    - Model: ${config.aws.modelId}
+    - Credentials: ${credentialSource}
+    `);
+  }
 }
 
 export default config;

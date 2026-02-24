@@ -150,10 +150,26 @@ class AgentTools {
    * Execute a tool call
    */
   async executeTool(toolName, toolInput) {
+    console.log('🔧 TOOL EXECUTION CALLED:', { toolName, input: toolInput });
     logger.info('Agent tool execution', { toolName, input: toolInput });
 
     try {
-      switch (toolName) {
+      // Map Claude CLI tool names to our internal tool names
+      // Claude CLI uses: Read, Write, Edit, Bash, Glob, Grep
+      const toolMap = {
+        'Read': 'read_file',
+        'Write': 'write_file',
+        'Edit': 'edit_file',
+        'Bash': 'run_command',
+        'Glob': 'list_directory',
+        'Grep': 'search_code'
+      };
+
+      const mappedName = toolMap[toolName] || toolName;
+      console.log('🗺️ TOOL MAPPED:', { original: toolName, mapped: mappedName });
+      logger.info('Tool mapped', { original: toolName, mapped: mappedName });
+
+      switch (mappedName) {
         case 'read_file':
           return await this.readFile(toolInput.file_path);
 
@@ -161,21 +177,27 @@ class AgentTools {
           return await this.writeFile(toolInput.file_path, toolInput.content);
 
         case 'edit_file':
-          return await this.editFile(toolInput.file_path, toolInput.old_text, toolInput.new_text);
+          return await this.editFile(toolInput.file_path, toolInput.old_string, toolInput.new_string);
 
         case 'list_directory':
-          return await this.listDirectory(toolInput.dir_path, toolInput.recursive);
+          return await this.listDirectory(toolInput.path || toolInput.dir_path, toolInput.recursive);
 
         case 'search_code':
-          return await this.searchCode(toolInput.pattern, toolInput.directory, toolInput.file_extension);
+          return await this.searchCode(toolInput.pattern, toolInput.path || toolInput.directory, toolInput.glob || toolInput.file_extension);
 
         case 'run_command':
           return await this.runCommand(toolInput.command);
 
         default:
-          throw new Error(`Unknown tool: ${toolName}`);
+          throw new Error(`Unknown tool: ${toolName} (mapped to: ${mappedName})`);
       }
     } catch (error) {
+      console.error('❌ TOOL EXECUTION ERROR:', {
+        toolName,
+        input: toolInput,
+        error: error.message,
+        stack: error.stack
+      });
       logger.error('Agent tool execution failed', {
         toolName,
         input: toolInput,

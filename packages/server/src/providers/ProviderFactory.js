@@ -1,5 +1,6 @@
 import BedrockProvider from './BedrockProvider.js';
 import AnthropicProvider from './AnthropicProvider.js';
+import ClaudeCliProvider from './ClaudeCliProvider.js';
 import logger from '../config/logger.js';
 
 /**
@@ -19,6 +20,7 @@ class ProviderFactory {
    * @returns {AIProvider} Provider instance
    */
   createProvider(type, config = {}) {
+    console.log('🔧 ProviderFactory.createProvider called with type:', type);
     let provider;
 
     switch (type) {
@@ -30,6 +32,11 @@ class ProviderFactory {
         provider = new AnthropicProvider(config);
         break;
 
+      case 'claude-cli':
+        console.log('🎯 Creating ClaudeCliProvider');
+        provider = new ClaudeCliProvider(config);
+        break;
+
       default:
         throw new Error(`Unknown provider type: ${type}`);
     }
@@ -37,6 +44,7 @@ class ProviderFactory {
     // Store provider instance
     this.providers.set(type, provider);
 
+    console.log('✅ Provider created:', provider.name, '(type:', provider.type, ')');
     logger.info('Provider created', {
       type,
       name: provider.name
@@ -65,6 +73,7 @@ class ProviderFactory {
    * @returns {AIProvider} Active provider instance
    */
   setCurrentProvider(type, config = {}) {
+    logger.info('setCurrentProvider called', { type, config });
     this.currentProvider = this.getProvider(type, config);
 
     logger.info('Current provider set', {

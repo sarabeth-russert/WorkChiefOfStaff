@@ -15,8 +15,14 @@ class ConfigStore {
     this.config = null;
     this.configPath = path.join(__dirname, '../../../data/config/providers.json');
     this.defaultConfig = {
-      currentProvider: 'bedrock',
+      currentProvider: 'claude-cli',
       providers: {
+        'claude-cli': {
+          type: 'claude-cli',
+          cliPath: 'claude',
+          modelId: 'claude-3-5-sonnet-20241022',
+          enabled: true
+        },
         bedrock: {
           type: 'bedrock',
           region: 'us-east-1',
@@ -53,23 +59,38 @@ class ConfigStore {
     try {
       // Ensure data directory exists
       await fs.mkdir(path.dirname(this.configPath), { recursive: true });
+      logger.info('ConfigStore attempting to load', {
+        path: this.configPath,
+        defaultProvider: this.defaultConfig.currentProvider
+      });
 
       // Try to read existing config
       try {
         const data = await fs.readFile(this.configPath, 'utf-8');
         this.config = JSON.parse(data);
-        logger.info('ConfigStore loaded', { path: this.configPath });
+        logger.info('ConfigStore loaded from disk', {
+          path: this.configPath,
+          currentProvider: this.config.currentProvider,
+          providers: Object.keys(this.config.providers)
+        });
       } catch (error) {
         // No existing config, use defaults
-        logger.info('No existing config found, using defaults');
-        this.config = { ...this.defaultConfig };
+        logger.info('No existing config found, using defaults', {
+          currentProvider: this.defaultConfig.currentProvider,
+          defaultProviders: Object.keys(this.defaultConfig.providers)
+        });
+        this.config = JSON.parse(JSON.stringify(this.defaultConfig));
         await this.saveConfig();
+        logger.info('Default config saved to disk', {
+          currentProvider: this.config.currentProvider,
+          path: this.configPath
+        });
       }
 
       return this.config;
     } catch (error) {
       logger.error('Failed to load config', { error: error.message });
-      this.config = { ...this.defaultConfig };
+      this.config = JSON.parse(JSON.stringify(this.defaultConfig));
       return this.config;
     }
   }
@@ -98,15 +119,20 @@ class ConfigStore {
    */
   getCurrentProvider() {
     if (!this.config) {
-      // Return safe defaults before config is loaded
+      // Return safe defaults before config is loaded - Use Claude CLI by default
+      logger.info('getCurrentProvider: No config loaded yet, returning claude-cli default');
       return {
-        type: 'bedrock',
-        region: 'us-east-1',
-        modelId: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+        type: 'claude-cli',
+        cliPath: 'claude',
+        modelId: 'claude-3-5-sonnet-20241022',
         enabled: true
       };
     }
     const providerType = this.config.currentProvider;
+    logger.info('getCurrentProvider: Returning loaded config', {
+      providerType,
+      modelId: this.config.providers[providerType]?.modelId
+    });
     return {
       type: providerType,
       ...this.config.providers[providerType]
@@ -118,7 +144,7 @@ class ConfigStore {
    */
   getCurrentModel() {
     if (!this.config) {
-      return 'us.anthropic.claude-3-5-sonnet-20241022-v2:0';
+      return 'claude-3-5-sonnet-20241022';
     }
     const provider = this.getCurrentProvider();
     return provider.modelId;
