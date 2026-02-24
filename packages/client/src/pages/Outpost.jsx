@@ -5,13 +5,22 @@ import GitStatus from '../components/git/GitStatus';
 const Outpost = () => {
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-6xl font-poster text-vintage-text text-letterpress mb-4">
-          ⛺ Outpost
-        </h1>
-        <p className="text-lg text-vintage-text opacity-80">
-          Developer Tools - Terminal & Git Operations
-        </p>
+      {/* Hero Header with Image */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage">
+        <img
+          src="/images/pages/outpost-header.png"
+          alt="Outpost"
+          className="w-full h-48 md:h-64 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
+            ⛺ Outpost
+          </h1>
+          <p className="text-lg text-vintage-text opacity-90 drop-shadow">
+            Developer Tools - Terminal & Git Operations
+          </p>
+        </div>
       </div>
 
       {/* Git Status */}

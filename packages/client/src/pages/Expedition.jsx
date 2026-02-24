@@ -54,18 +54,27 @@ const Expedition = () => {
 
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-6xl font-poster text-vintage-text text-letterpress mb-4">
-          🗺️ Expedition
-        </h1>
-        <p className="text-lg text-vintage-text opacity-80">
-          Chief of Staff - AI Agent Orchestration
-        </p>
-        {!connected && (
-          <p className="text-terracotta-dark mt-2">
-            ⚠️ Connecting to server...
+      {/* Hero Header with Image */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage">
+        <img
+          src="/images/pages/expedition-header.png"
+          alt="Expedition"
+          className="w-full h-48 md:h-64 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
+            🗺️ Expedition
+          </h1>
+          <p className="text-lg text-vintage-text opacity-90 drop-shadow">
+            Chief of Staff - AI Agent Orchestration
           </p>
-        )}
+          {!connected && (
+            <p className="text-terracotta-dark mt-2 drop-shadow">
+              ⚠️ Connecting to server...
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Agent Selection */}

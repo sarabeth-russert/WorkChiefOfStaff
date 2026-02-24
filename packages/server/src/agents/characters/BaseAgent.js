@@ -8,6 +8,7 @@ class BaseAgent {
     this.name = options.name || 'Base Agent';
     this.type = options.type || 'base';
     this.icon = options.icon || '🤖';
+    this.imagePath = options.imagePath || `/images/characters/${options.type}.png`;
     this.personality = options.personality || 'Helpful and professional';
     this.role = options.role || 'General assistant';
     this.skills = options.skills || [];
@@ -309,6 +310,7 @@ Remember: You are part of a vintage 1950s-60s Adventureland themed system, so ma
       name: this.name,
       type: this.type,
       icon: this.icon,
+      imagePath: this.imagePath,
       personality: this.personality,
       role: this.role,
       skills: this.skills,
