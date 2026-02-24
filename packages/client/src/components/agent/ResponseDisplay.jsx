@@ -9,7 +9,21 @@ const ResponseDisplay = ({ response, agent }) => {
   return (
     <Card variant="canvas">
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-3xl">{agent?.icon || '🤖'}</span>
+        {agent?.imagePath ? (
+          <img
+            src={agent.imagePath}
+            alt={agent.name}
+            className="w-12 h-12 rounded-full object-cover border-2 border-vintage-text shadow-sm"
+            onError={(e) => {
+              // Fallback to icon if image fails to load
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'inline';
+            }}
+          />
+        ) : null}
+        <span className="text-3xl" style={{ display: agent?.imagePath ? 'none' : 'inline' }}>
+          {agent?.icon || '🤖'}
+        </span>
         <h3 className="text-2xl font-poster text-vintage-text">
           {agent?.name || 'Agent'} Response
         </h3>

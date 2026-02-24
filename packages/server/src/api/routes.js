@@ -365,4 +365,146 @@ router.get('/git/is-repo', async (req, res) => {
   }
 });
 
+// Jira routes
+import jiraManager from '../integrations/JiraManager.js';
+
+router.post('/jira/configure', (req, res) => {
+  try {
+    jiraManager.configure(req.body);
+    res.json({ success: true, configured: jiraManager.isConfigured() });
+  } catch (error) {
+    logger.error('Error configuring Jira', error);
+    res.status(500).json({ error: 'Failed to configure Jira' });
+  }
+});
+
+router.get('/jira/test', async (req, res) => {
+  try {
+    const result = await jiraManager.testConnection();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error testing Jira connection', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/jira/user', async (req, res) => {
+  try {
+    const user = await jiraManager.getCurrentUser();
+    res.json({ user });
+  } catch (error) {
+    logger.error('Error fetching current Jira user', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/jira/projects', async (req, res) => {
+  try {
+    const projects = await jiraManager.getProjects();
+    res.json({ projects });
+  } catch (error) {
+    logger.error('Error fetching Jira projects', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/jira/projects/:projectKey/issues', async (req, res) => {
+  try {
+    const { projectKey } = req.params;
+    const options = {
+      maxResults: parseInt(req.query.maxResults) || 1000,
+      startAt: parseInt(req.query.startAt) || 0,
+      status: req.query.status,
+      assignee: req.query.assignee,
+      myIssuesOnly: req.query.myIssuesOnly === 'true' // Filter by assignee OR reporter
+    };
+    const result = await jiraManager.getIssues(projectKey, options);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error fetching Jira issues', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/jira/issues/:issueKey', async (req, res) => {
+  try {
+    const issue = await jiraManager.getIssue(req.params.issueKey);
+    res.json({ issue });
+  } catch (error) {
+    logger.error('Error fetching Jira issue', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jira/issues', async (req, res) => {
+  try {
+    const issue = await jiraManager.createIssue(req.body);
+    res.json({ success: true, issue });
+  } catch (error) {
+    logger.error('Error creating Jira issue', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/jira/issues/:issueKey', async (req, res) => {
+  try {
+    const result = await jiraManager.updateIssue(req.params.issueKey, req.body);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error updating Jira issue', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jira/issues/:issueKey/comment', async (req, res) => {
+  try {
+    const result = await jiraManager.addComment(req.params.issueKey, req.body.comment);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error adding comment', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jira/issues/:issueKey/transition', async (req, res) => {
+  try {
+    const result = await jiraManager.transitionIssue(req.params.issueKey, req.body.status);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error transitioning issue', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/jira/projects/:projectKey/issue-types', async (req, res) => {
+  try {
+    const issueTypes = await jiraManager.getIssueTypes(req.params.projectKey);
+    res.json({ issueTypes });
+  } catch (error) {
+    logger.error('Error fetching issue types', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/jira/search', async (req, res) => {
+  try {
+    const { jql, maxResults, startAt } = req.body;
+    const result = await jiraManager.searchIssues(jql, { maxResults, startAt });
+    res.json(result);
+  } catch (error) {
+    logger.error('Error searching Jira', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/jira/me', async (req, res) => {
+  try {
+    const user = await jiraManager.getCurrentUser();
+    res.json({ user });
+  } catch (error) {
+    logger.error('Error fetching current user', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

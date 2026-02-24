@@ -9,6 +9,7 @@ const Expedition = lazy(() => import('./pages/Expedition'));
 const TradingPost = lazy(() => import('./pages/TradingPost'));
 const MapRoom = lazy(() => import('./pages/MapRoom'));
 const Outpost = lazy(() => import('./pages/Outpost'));
+const Jira = lazy(() => import('./pages/Jira'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
               <Route path="trading-post" element={<TradingPost />} />
               <Route path="map-room" element={<MapRoom />} />
               <Route path="outpost" element={<Outpost />} />
+              <Route path="jira" element={<Jira />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

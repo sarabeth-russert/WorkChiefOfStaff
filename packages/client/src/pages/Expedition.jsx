@@ -14,7 +14,9 @@ const Expedition = () => {
     currentAgent,
     isProcessing,
     connected,
-    error
+    error,
+    conversationHistory,
+    clearConversationHistory
   } = useAgentStore();
 
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -99,6 +101,19 @@ const Expedition = () => {
       {/* Task Input */}
       {selectedAgent && (
         <Card>
+          {conversationHistory[selectedAgent.type]?.length > 0 && (
+            <div className="mb-4 flex items-center justify-between p-3 bg-sand rounded border-2 border-mustard">
+              <p className="text-sm text-vintage-text">
+                <strong>Conversation Active:</strong> {conversationHistory[selectedAgent.type].length / 2} messages in history
+              </p>
+              <button
+                onClick={() => clearConversationHistory(selectedAgent.type)}
+                className="px-3 py-1 text-sm font-ui uppercase bg-terracotta text-cream rounded border-2 border-terracotta-dark hover:bg-terracotta-dark transition-colors"
+              >
+                Clear History
+              </button>
+            </div>
+          )}
           <TaskInput
             onSubmit={handleSubmitTask}
             isProcessing={isProcessing}

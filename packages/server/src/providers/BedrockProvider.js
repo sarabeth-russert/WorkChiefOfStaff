@@ -74,7 +74,7 @@ class BedrockProvider extends AIProvider {
    */
   async createMessage(params) {
     try {
-      const { model, max_tokens, system, messages, temperature = 1.0 } = params;
+      const { model, max_tokens, system, messages, temperature = 1.0, tools, tool_choice } = params;
 
       const bedrockRequest = {
         anthropic_version: 'bedrock-2023-05-31',
@@ -83,6 +83,16 @@ class BedrockProvider extends AIProvider {
         messages: messages,
         system: system
       };
+
+      // Add tools if provided
+      if (tools && tools.length > 0) {
+        bedrockRequest.tools = tools;
+      }
+
+      // Add tool_choice if provided
+      if (tool_choice) {
+        bedrockRequest.tool_choice = tool_choice;
+      }
 
       const command = new InvokeModelCommand({
         modelId: model || this.modelId,
@@ -121,7 +131,7 @@ class BedrockProvider extends AIProvider {
    */
   async *createStreamingMessage(params) {
     try {
-      const { model, max_tokens, system, messages, temperature = 1.0 } = params;
+      const { model, max_tokens, system, messages, temperature = 1.0, tools, tool_choice } = params;
 
       const bedrockRequest = {
         anthropic_version: 'bedrock-2023-05-31',
@@ -130,6 +140,16 @@ class BedrockProvider extends AIProvider {
         messages: messages,
         system: system
       };
+
+      // Add tools if provided
+      if (tools && tools.length > 0) {
+        bedrockRequest.tools = tools;
+      }
+
+      // Add tool_choice if provided
+      if (tool_choice) {
+        bedrockRequest.tool_choice = tool_choice;
+      }
 
       const command = new InvokeModelWithResponseStreamCommand({
         modelId: model || this.modelId,
@@ -159,7 +179,7 @@ class BedrockProvider extends AIProvider {
             yield {
               type: 'content_block_start',
               index: chunk.index || 0,
-              content_block: {
+              content_block: chunk.content_block || {
                 type: 'text',
                 text: ''
               }
@@ -168,7 +188,7 @@ class BedrockProvider extends AIProvider {
             yield {
               type: 'content_block_delta',
               index: chunk.index || 0,
-              delta: {
+              delta: chunk.delta || {
                 type: 'text_delta',
                 text: chunk.delta?.text || ''
               }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Button } from '../components/ui';
 import useAppStore from '../stores/appStore';
 import AppCard from '../components/app/AppCard';
+import AddAppModal from '../components/app/AddAppModal';
 
 const TradingPost = () => {
   const {
@@ -14,11 +15,14 @@ const TradingPost = () => {
     startApp,
     stopApp,
     restartApp,
+    registerApp,
+    deleteApp,
     fetchSystemStats,
     clearError
   } = useAppStore();
 
   const [selectedApp, setSelectedApp] = useState(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     fetchApps();
@@ -61,6 +65,25 @@ const TradingPost = () => {
     setSelectedApp(app);
     // TODO: Implement log viewer modal
     alert(`Log viewer for ${app.name} coming soon!`);
+  };
+
+  const handleAddApp = async (appData) => {
+    try {
+      await registerApp(appData);
+      setShowAddModal(false);
+    } catch (error) {
+      console.error('Error registering app:', error);
+    }
+  };
+
+  const handleDeleteApp = async (appId) => {
+    if (confirm('Are you sure you want to unregister this app? This will not delete the app files.')) {
+      try {
+        await deleteApp(appId);
+      } catch (error) {
+        console.error('Error deleting app:', error);
+      }
+    }
   };
 
   return (
@@ -160,9 +183,15 @@ const TradingPost = () => {
             <p className="text-vintage-text mb-4">
               No applications registered yet.
             </p>
-            <p className="text-sm text-vintage-text opacity-70">
+            <p className="text-sm text-vintage-text opacity-70 mb-6">
               Register your applications to manage them through the Trading Post.
             </p>
+            <Button
+              variant="primary"
+              onClick={() => setShowAddModal(true)}
+            >
+              + Register Your First App
+            </Button>
           </div>
         </Card>
       ) : (
@@ -171,7 +200,11 @@ const TradingPost = () => {
             <h2 className="text-3xl font-poster text-vintage-text">
               Your Applications
             </h2>
-            <Button variant="primary" size="sm">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setShowAddModal(true)}
+            >
               + Register App
             </Button>
           </div>
@@ -184,10 +217,19 @@ const TradingPost = () => {
                 onStop={handleStop}
                 onRestart={handleRestart}
                 onViewLogs={handleViewLogs}
+                onDelete={handleDeleteApp}
               />
             ))}
           </div>
         </>
+      )}
+
+      {/* Add App Modal */}
+      {showAddModal && (
+        <AddAppModal
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddApp}
+        />
       )}
     </div>
   );

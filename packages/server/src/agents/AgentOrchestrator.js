@@ -71,6 +71,7 @@ class AgentOrchestrator {
       taskType = 'custom',
       task,
       agentType = null,
+      history = null,
       stream = false,
       onChunk = null
     } = options;
@@ -89,7 +90,8 @@ class AgentOrchestrator {
         taskId,
         taskType,
         selectedAgentType,
-        taskPreview: task.substring(0, 100)
+        taskPreview: task.substring(0, 100),
+        historyLength: history ? history.length : 0
       });
 
       // Get the agent
@@ -105,12 +107,15 @@ class AgentOrchestrator {
         reasoning: `Selected ${selectedAgentType} based on task type and content analysis`
       };
 
+      // Prepare options for agent
+      const agentOptions = history ? { history } : {};
+
       // Execute task
       let result;
       if (stream && onChunk) {
-        result = await agent.streamTask(task, onChunk);
+        result = await agent.streamTask(task, onChunk, agentOptions);
       } else {
-        result = await agent.processTask(task);
+        result = await agent.processTask(task, agentOptions);
       }
 
       const endTime = Date.now();

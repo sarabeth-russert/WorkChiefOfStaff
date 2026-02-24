@@ -47,9 +47,22 @@ const useAgentStore = create((set, get) => {
 
   socket.on('agent:task:completed', (data) => {
     console.log('Task completed:', data);
-    const { tasks } = get();
+    const { tasks, conversationHistory } = get();
+
+    // Update conversation history for this agent
+    const agentHistory = conversationHistory[data.agentType] || [];
+    const updatedHistory = {
+      ...conversationHistory,
+      [data.agentType]: [
+        ...agentHistory,
+        { role: 'user', content: data.task },
+        { role: 'assistant', content: data.response }
+      ]
+    };
+
     set({
       isProcessing: false,
+      conversationHistory: updatedHistory,
       tasks: [...tasks, {
         id: data.taskId,
         timestamp: new Date().toISOString(),
@@ -78,22 +91,27 @@ const useAgentStore = create((set, get) => {
     isProcessing: false,
     tasks: [],
     error: null,
+    conversationHistory: {}, // Store conversation history per agent type
 
     // Actions
     setAgents: (agents) => set({ agents }),
 
     submitTask: (agentType, taskType, task) => {
-      const { socket } = get();
+      const { socket, conversationHistory } = get();
       set({
         isProcessing: true,
         currentResponse: '',
         error: null
       });
 
+      // Get conversation history for this agent
+      const history = conversationHistory[agentType] || [];
+
       socket.emit('agent:task', {
         agentType,
         taskType,
-        task
+        task,
+        history // Send conversation history
       });
     },
 
@@ -103,7 +121,20 @@ const useAgentStore = create((set, get) => {
       currentResponse: '',
       currentAgent: null,
       currentTaskId: null
-    })
+    }),
+
+    clearConversationHistory: (agentType) => {
+      const { conversationHistory } = get();
+      if (agentType) {
+        // Clear specific agent's history
+        const updated = { ...conversationHistory };
+        delete updated[agentType];
+        set({ conversationHistory: updated });
+      } else {
+        // Clear all conversation history
+        set({ conversationHistory: {} });
+      }
+    }
   };
 });
 

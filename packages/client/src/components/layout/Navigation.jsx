@@ -11,6 +11,7 @@ const Navigation = () => {
     { path: '/trading-post', label: 'Trading Post' },
     { path: '/map-room', label: 'Map Room' },
     { path: '/outpost', label: 'Outpost' },
+    { path: '/jira', label: 'Jira' },
     { path: '/settings', label: 'Settings' }
   ];
 

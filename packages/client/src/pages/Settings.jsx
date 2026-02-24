@@ -4,6 +4,7 @@ import ProviderSelector from '../components/settings/ProviderSelector';
 import ModelSelector from '../components/settings/ModelSelector';
 import PromptEditor from '../components/settings/PromptEditor';
 import SettingsPanel from '../components/settings/SettingsPanel';
+import JiraSettings from '../components/jira/JiraSettings';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
@@ -19,6 +20,7 @@ const Settings = () => {
     { id: 'providers', label: 'Providers', icon: '🔌' },
     { id: 'models', label: 'Models', icon: '🤖' },
     { id: 'prompts', label: 'Prompts', icon: '📝' },
+    { id: 'jira', label: 'Jira', icon: '🎫' },
     { id: 'settings', label: 'Settings', icon: '⚙️' }
   ];
 
@@ -101,6 +103,12 @@ const Settings = () => {
                 </p>
                 <PromptEditor />
               </Card>
+            )}
+
+            {activeTab === 'jira' && (
+              <div className="max-w-4xl">
+                <JiraSettings />
+              </div>
             )}
 
             {activeTab === 'settings' && (
