@@ -23,18 +23,18 @@ const Card = ({
       {...props}
     >
       {(title || icon || iconImage) && (
-        <div className="flex items-center gap-3 mb-4">
+        <div className="flex items-center gap-4 mb-4">
           {(icon || iconImage) && (
             <div className="flex-shrink-0">
               {!imageError && iconImage ? (
                 <img
                   src={iconImage}
                   alt={title || 'Icon'}
-                  className="w-12 h-12 object-contain"
+                  className="w-20 h-20 object-contain"
                   onError={() => setImageError(true)}
                 />
               ) : icon ? (
-                <span className="text-3xl">{icon}</span>
+                <span className="text-5xl">{icon}</span>
               ) : null}
             </div>
           )}

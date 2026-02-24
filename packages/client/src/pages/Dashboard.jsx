@@ -10,25 +10,24 @@ const Dashboard = () => {
           Welcome to Adventureland
         </h1>
         <p className="text-xl text-vintage-text opacity-80 max-w-2xl mx-auto">
-          Your personal Chief of Staff system for managing development workflows,
-          AI agents, and knowledge with vintage charm.
+          Chart your course through code with AI agents as your guides and knowledge as your compass.
         </p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-6">
             <img
               src="/images/dashboard/active-agents.png"
               alt="Active Agents"
-              className="w-16 h-16 object-contain"
+              className="w-32 h-32 object-contain"
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'block';
               }}
             />
-            <div className="text-5xl" style={{ display: 'none' }}>🗺️</div>
+            <div className="text-7xl" style={{ display: 'none' }}>🗺️</div>
           </div>
           <h3 className="text-3xl font-poster text-vintage-text mb-2">6</h3>
           <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
@@ -37,17 +36,17 @@ const Dashboard = () => {
         </Card>
 
         <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-6">
             <img
               src="/images/dashboard/managed-apps.png"
               alt="Managed Apps"
-              className="w-16 h-16 object-contain"
+              className="w-32 h-32 object-contain"
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'block';
               }}
             />
-            <div className="text-5xl" style={{ display: 'none' }}>💰</div>
+            <div className="text-7xl" style={{ display: 'none' }}>💰</div>
           </div>
           <h3 className="text-3xl font-poster text-vintage-text mb-2">0</h3>
           <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
@@ -56,17 +55,17 @@ const Dashboard = () => {
         </Card>
 
         <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-3">
+          <div className="flex justify-center mb-6">
             <img
               src="/images/dashboard/knowledge-items.png"
               alt="Knowledge Items"
-              className="w-16 h-16 object-contain"
+              className="w-32 h-32 object-contain"
               onError={(e) => {
                 e.target.style.display = 'none';
                 e.target.nextSibling.style.display = 'block';
               }}
             />
-            <div className="text-5xl" style={{ display: 'none' }}>📍</div>
+            <div className="text-7xl" style={{ display: 'none' }}>📍</div>
           </div>
           <h3 className="text-3xl font-poster text-vintage-text mb-2">0</h3>
           <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
