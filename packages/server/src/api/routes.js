@@ -52,23 +52,45 @@ router.post('/agents/task', async (req, res) => {
 // App management routes
 import pm2Manager from '../processes/PM2Manager.js';
 import appRegistry from '../processes/AppRegistry.js';
+import portChecker from '../processes/PortChecker.js';
 
 router.get('/apps', async (req, res) => {
   try {
     const registeredApps = appRegistry.getAllApps();
     const pm2Processes = await pm2Manager.listProcesses();
 
-    // Merge registry data with PM2 process data
+    // Check ports for all apps
+    const portsToCheck = registeredApps
+      .filter(app => app.port)
+      .map(app => app.port);
+
+    const portStatuses = await portChecker.checkPorts(portsToCheck);
+    const portMap = Object.fromEntries(
+      portStatuses.map(ps => [ps.port, ps])
+    );
+
+    // Merge registry data with PM2 process data and port status
     const apps = registeredApps.map(app => {
       const process = pm2Processes.find(p => p.name === app.pm2Name);
+      const portStatus = app.port ? portMap[app.port] : null;
+
+      // Determine status: PM2 process status takes priority, then port check
+      let status = 'not_running';
+      if (process) {
+        status = process.status;
+      } else if (portStatus?.inUse) {
+        status = 'running';
+      }
+
       return {
         ...app,
-        status: process?.status || 'not_running',
-        pid: process?.pid || null,
+        status,
+        pid: process?.pid || portStatus?.process?.pid || null,
         cpu: process?.cpu || 0,
         memory: process?.memory || 0,
         uptime: process?.uptime || null,
-        restarts: process?.restarts || 0
+        restarts: process?.restarts || 0,
+        portInUse: portStatus?.inUse || false
       };
     });
 

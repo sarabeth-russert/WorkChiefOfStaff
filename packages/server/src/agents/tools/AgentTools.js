@@ -215,7 +215,15 @@ class AgentTools {
    * Read a file
    */
   async readFile(filePath) {
-    const fullPath = path.join(this.baseDir, filePath);
+    // Handle both absolute and relative paths
+    let fullPath;
+    if (path.isAbsolute(filePath)) {
+      // Already absolute - use as-is
+      fullPath = filePath;
+    } else {
+      // Relative path - join with base directory
+      fullPath = path.join(this.baseDir, filePath);
+    }
 
     // Path check disabled - agents have full access
     // if (!this.isPathAllowed(fullPath)) {
@@ -223,7 +231,7 @@ class AgentTools {
     // }
 
     if (!fs.existsSync(fullPath)) {
-      throw new Error(`File not found: ${filePath}`);
+      throw new Error(`File not found: ${fullPath} (original: ${filePath})`);
     }
 
     const content = fs.readFileSync(fullPath, 'utf8');
@@ -242,7 +250,13 @@ class AgentTools {
    * Write a file
    */
   async writeFile(filePath, content) {
-    const fullPath = path.join(this.baseDir, filePath);
+    // Handle both absolute and relative paths
+    let fullPath;
+    if (path.isAbsolute(filePath)) {
+      fullPath = filePath;
+    } else {
+      fullPath = path.join(this.baseDir, filePath);
+    }
 
     // Path check disabled - agents have full access
     // if (!this.isPathAllowed(fullPath)) {
@@ -269,7 +283,13 @@ class AgentTools {
    * Edit a file by replacing text
    */
   async editFile(filePath, oldText, newText) {
-    const fullPath = path.join(this.baseDir, filePath);
+    // Handle both absolute and relative paths
+    let fullPath;
+    if (path.isAbsolute(filePath)) {
+      fullPath = filePath;
+    } else {
+      fullPath = path.join(this.baseDir, filePath);
+    }
 
     // Path check disabled - agents have full access
     // if (!this.isPathAllowed(fullPath)) {
@@ -277,7 +297,7 @@ class AgentTools {
     // }
 
     if (!fs.existsSync(fullPath)) {
-      throw new Error(`File not found: ${filePath}`);
+      throw new Error(`File not found: ${fullPath} (original: ${filePath})`);
     }
 
     let content = fs.readFileSync(fullPath, 'utf8');
@@ -310,7 +330,13 @@ class AgentTools {
    * List directory contents
    */
   async listDirectory(dirPath, recursive = false) {
-    const fullPath = path.join(this.baseDir, dirPath);
+    // Handle both absolute and relative paths
+    let fullPath;
+    if (path.isAbsolute(dirPath)) {
+      fullPath = dirPath;
+    } else {
+      fullPath = path.join(this.baseDir, dirPath);
+    }
 
     // Path check disabled - agents have full access
     // if (!this.isPathAllowed(fullPath)) {
@@ -365,7 +391,13 @@ class AgentTools {
    * Search code using grep
    */
   async searchCode(pattern, directory, fileExtension = '') {
-    const fullPath = path.join(this.baseDir, directory);
+    // Handle both absolute and relative paths
+    let fullPath;
+    if (path.isAbsolute(directory)) {
+      fullPath = directory;
+    } else {
+      fullPath = path.join(this.baseDir, directory);
+    }
 
     // Path check disabled - agents have full access
     // if (!this.isPathAllowed(fullPath)) {
