@@ -1,46 +1,132 @@
 # 🌴 Adventureland Chief of Staff
 
-A self-hosted "Chief of Staff" system with vintage 1950s-60s Adventureland theme. Manage AI agents, local applications, knowledge, and developer tools from one delightful interface.
+A self-hosted personal productivity system with vintage 1950s-60s Adventureland theme. Manage AI agents, track wellness, plan your day, manage applications, capture knowledge, and access developer tools—all from one delightful interface.
+
+**Think of it as:** Your AI-powered personal assistant that combines health tracking, daily planning, project management, and coding tools in a beautifully themed adventure interface.
+
+---
 
 ## ✨ Features
 
-- **🗺️ Expedition (Chief of Staff)**: AI agent orchestration with character-based agents
-- **💰 Trading Post**: Application management with PM2 integration
-- **📍 Map Room**: Second Brain for knowledge capture and semantic search
-- **⛺ Outpost**: Integrated terminal, Git tools, and system monitoring
+### 🗺️ Expedition (Agent Orchestration)
+Coordinate with specialized AI character agents to tackle complex tasks:
+- **Guide** 📖 - Wellness coaching and daily planning assistant
+- **Explorer** 🗺️ - Code discovery, refactoring, and architecture analysis
+- Task routing and multi-agent coordination
+- Real-time conversation with streaming responses
+- Character-based agent personalities
+
+### 🏥 Medic (Wellness Monitoring)
+Track your health metrics and optimize your performance:
+- Oura Ring integration for sleep, activity, and readiness tracking
+- Daily wellness metrics dashboard with 7-day trends
+- Automatic hourly data syncing
+- Personalized health insights and recommendations
+- Stress monitoring and break reminders
+- Configure wellness settings and notification preferences
+
+### 🏕️ Base Camp (Daily Planning & Reflection)
+Your daily planning and reflection journal:
+- **Morning Standup Sessions**: Chat with Guide agent to plan your day based on wellness data
+- **Evening Retro Sessions**: Review accomplishments and plan tomorrow
+- Natural conversation interface with AI coaching
+- Persistent journal of all completed sessions
+- View full conversation history and summaries
+- Morning plans automatically displayed in evening retros
+
+### 💰 Trading Post (Application Management)
+Manage local applications and services with PM2 integration:
+- Start, stop, restart, and monitor applications
+- View real-time logs and resource usage
+- Application health monitoring
+- Easy PM2 process management
+
+### 📍 Map Room (Knowledge Base)
+Second Brain for knowledge capture and semantic search:
+- Store notes, documents, and reference materials
+- Semantic search across your knowledge base
+- Organize with tags and categories
+- Quick access to frequently referenced information
+
+### ⛺ Outpost (Developer Tools)
+Integrated terminal and Git tools:
+- In-browser terminal access
+- Git operations and repository management
+- System monitoring and diagnostics
+- Quick access to development workflows
+
+### 🎫 Jira Integration
+Connect your Jira workspace for seamless project management:
+- OAuth 2.0 secure authentication
+- View and manage issues directly in the app
+- Sync project status and updates
+- Track work across Jira and Chief of Staff
+
+---
 
 ## 🏗️ Architecture
 
-Monorepo structure with:
-- **Client**: React 18 + Vite + Tailwind CSS (Port 5555)
-- **Server**: Node.js + Express + Socket.IO (Port 5554)
-- **Shared**: Common types and constants
+Monorepo structure with client-server architecture:
+
+```
+┌─────────────────────────────────────────────────────┐
+│                    Browser Client                    │
+│   React 18 + Vite + Tailwind CSS (Port 5555)       │
+│   ├─ Zustand State Management                       │
+│   ├─ React Router Navigation                        │
+│   └─ Socket.IO Real-time Updates                    │
+└─────────────────┬───────────────────────────────────┘
+                  │
+                  ↓
+┌─────────────────────────────────────────────────────┐
+│                   Express Server                     │
+│      Node.js + Express + Socket.IO (Port 5554)     │
+│   ├─ Agent Orchestrator                             │
+│   ├─ Wellness Integration (Oura API)                │
+│   ├─ PM2 Process Management                         │
+│   ├─ Knowledge Store                                │
+│   └─ REST API + WebSocket Events                    │
+└─────────────────┬───────────────────────────────────┘
+                  │
+                  ↓
+         ┌────────┴────────┐
+         │                 │
+    ┌────▼─────┐     ┌────▼─────┐
+    │  AWS     │     │  Oura    │
+    │ Bedrock  │     │  Ring    │
+    │ (Claude) │     │   API    │
+    └──────────┘     └──────────┘
+```
+
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
-- AWS Account with Bedrock access (Claude models enabled)
+- **Node.js 18+** and npm/yarn
+- **AWS Account** with Bedrock access (Claude models enabled)
+- **Oura Ring** (optional, for wellness features)
+- **Jira Account** (optional, for project management integration)
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository:**
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/sarabeth-russert/WorkChiefOfStaff.git
 cd chiefOfStaff
 ```
 
-2. Install dependencies:
+2. **Install dependencies:**
 ```bash
 npm install
 ```
 
-3. Configure AWS credentials:
+3. **Configure AWS credentials:**
 ```bash
 # Option 1: Use AWS Profile (Recommended)
-aws configure  # Set up your AWS credentials
+aws configure
+# Enter your AWS credentials when prompted
 
 # Option 2: Set environment variables
 export AWS_ACCESS_KEY_ID=your_access_key
@@ -48,20 +134,26 @@ export AWS_SECRET_ACCESS_KEY=your_secret_key
 export AWS_REGION=us-east-1
 
 # The system will automatically use AWS Bedrock with Claude
-# See AWS_BEDROCK_SETUP.md for detailed configuration options
 ```
 
-4. Start the development servers:
+See `AWS_BEDROCK_SETUP.md` for detailed AWS configuration options.
+
+4. **Start the development servers:**
 ```bash
 npm run dev
 ```
 
-This will start both the client (port 5555) and server (port 5554) using PM2.
+This starts both client (port 5555) and server (port 5554) using PM2.
 
-5. Open your browser:
+5. **Open your browser:**
 ```
 http://localhost:5555
 ```
+
+6. **Configure integrations (optional):**
+- **Oura Ring**: Navigate to Settings → Oura Ring tab to set up OAuth connection
+- **Jira**: Go to Jira page to connect your workspace
+- **AI Providers**: Configure in Settings → Providers tab
 
 ### Development Commands
 
@@ -85,121 +177,340 @@ pm2 logs
 pm2 status
 ```
 
+---
+
 ## 🎨 Design System
 
-The application features a vintage 1950s-60s Adventureland poster aesthetic:
+Vintage 1950s-60s Adventureland poster aesthetic inspired by Disney's Society of Explorers and Adventurers (SEA).
 
 ### Color Palette
 
-- **Primary**: Sand (#E8D4A8), Terracotta (#D4735E), Jungle (#4A7859), Sunset (#E87144)
-- **Secondary**: Teal (#479B99), Mustard (#DAA520), Burgundy (#8B3A3A), Cream (#FFF8E7)
+**Primary Colors:**
+- 🏜️ **Sand** (#E8D4A8) - Warm neutral base
+- 🧱 **Terracotta** (#D4735E) - Earthy accent
+- 🌿 **Jungle** (#4A7859) - Deep green
+- 🌅 **Sunset** (#E87144) - Vibrant orange
+
+**Secondary Colors:**
+- 🌊 **Teal** (#479B99) - Cool accent
+- 🌻 **Mustard** (#DAA520) - Golden highlight
+- 🍷 **Burgundy** (#8B3A3A) - Rich red
+- 📄 **Cream** (#FFF8E7) - Background
 
 ### Typography
 
 - **Headers**: Bebas Neue (bold poster style)
 - **Body**: Merriweather (readable serif)
-- **UI**: Pathway Gothic One (clean sans-serif)
-- **Code**: Courier Prime (monospace)
+- **UI Elements**: Pathway Gothic One (clean sans-serif)
+- **Code/Monospace**: Courier Prime
 
-### Styling Techniques
+### Visual Style
 
-- Rough borders with double box-shadows
-- Letterpress text effects
-- Vintage button states
+- Vintage letterpress text effects
+- Rough hand-drawn borders
 - Paper texture overlays
+- Hero banner illustrations for each page
+- Character-based agent illustrations
+- Shadow effects and depth
+
+---
 
 ## 🤖 AI Agents
 
-### Explorer 🗺️
-**Personality**: Curious, methodical
-**Role**: Code discovery, refactoring, architecture
-**Skills**: Code analysis, pattern recognition, dependency mapping
+Each agent is a specialized AI assistant with unique personality, skills, and visual character design.
+
+### Active Agents
+
+#### 📖 Guide
+**Personality**: Warm, supportive, insightful
+**Role**: Wellness coaching and daily planning
+**Skills**: Health data interpretation, goal setting, reflection facilitation
+**Usage**: Morning standups, evening retros, wellness advice
+
+#### 🗺️ Explorer
+**Personality**: Curious, methodical, adventurous
+**Role**: Code discovery and architecture analysis
+**Skills**: Code analysis, pattern recognition, refactoring, dependency mapping
+**Usage**: Codebase exploration, technical documentation, architecture reviews
 
 ### Coming Soon
-- Trader 💰 (Dependency management)
-- Navigator 🧭 (Git operations)
-- Archaeologist 🏺 (Knowledge retrieval)
-- Scout 🔭 (Testing & monitoring)
-- Guide 📖 (Onboarding & tutorials)
+
+- 💰 **Trader** - Dependency and resource management
+- 🧭 **Navigator** - Git operations and version control
+- 🏺 **Archaeologist** - Knowledge retrieval and research
+- 🔭 **Scout** - Testing, monitoring, and quality assurance
+
+---
 
 ## 📁 Project Structure
 
 ```
 chiefOfStaff/
 ├── packages/
-│   ├── client/              # React frontend
+│   ├── client/                    # React frontend (Port 5555)
 │   │   ├── src/
-│   │   │   ├── components/  # UI components
-│   │   │   ├── pages/       # Page components
-│   │   │   ├── stores/      # Zustand state management
-│   │   │   └── styles/      # Theme and styles
+│   │   │   ├── components/
+│   │   │   │   ├── agents/        # Agent chat interfaces
+│   │   │   │   ├── layout/        # Navigation, header, footer
+│   │   │   │   ├── ui/            # Reusable UI components
+│   │   │   │   └── wellness/      # Wellness & session components
+│   │   │   ├── pages/
+│   │   │   │   ├── Dashboard.jsx
+│   │   │   │   ├── Expedition.jsx # Agent orchestration
+│   │   │   │   ├── Medic.jsx      # Wellness metrics
+│   │   │   │   ├── BaseCamp.jsx   # Planning journal
+│   │   │   │   ├── TradingPost.jsx
+│   │   │   │   ├── MapRoom.jsx
+│   │   │   │   ├── Outpost.jsx
+│   │   │   │   ├── Jira.jsx
+│   │   │   │   └── Settings.jsx
+│   │   │   ├── stores/            # Zustand state management
+│   │   │   │   ├── agentStore.js
+│   │   │   │   ├── wellnessStore.js
+│   │   │   │   └── configStore.js
+│   │   │   └── styles/            # Tailwind config & theme
 │   │   └── public/
+│   │       ├── images/
+│   │       │   ├── characters/    # Agent illustrations
+│   │       │   ├── pages/         # Hero banner images
+│   │       │   └── dashboard/     # Dashboard cards
+│   │       └── fonts/             # Custom web fonts
 │   │
-│   ├── server/              # Express backend
+│   ├── server/                    # Express backend (Port 5554)
 │   │   ├── src/
-│   │   │   ├── agents/      # Agent system
-│   │   │   ├── api/         # REST API routes
-│   │   │   ├── config/      # Configuration
-│   │   │   └── socket/      # Socket.IO handlers
-│   │   └── data/            # Data storage
+│   │   │   ├── agents/
+│   │   │   │   ├── BaseAgent.js   # Agent base class
+│   │   │   │   ├── AgentOrchestrator.js
+│   │   │   │   └── characters/    # Individual agent implementations
+│   │   │   ├── api/
+│   │   │   │   ├── routes.js      # Main API routes
+│   │   │   │   ├── configRoutes.js
+│   │   │   │   └── jiraRoutes.js
+│   │   │   ├── config/
+│   │   │   │   ├── ConfigStore.js # Configuration management
+│   │   │   │   └── logger.js      # Winston logging
+│   │   │   ├── wellness/
+│   │   │   │   ├── WellnessDataStore.js  # Session persistence
+│   │   │   │   ├── WellnessMeetings.js   # Standup/retro logic
+│   │   │   │   ├── WellnessScheduler.js  # Cron jobs
+│   │   │   │   └── OuraManager.js        # Oura API client
+│   │   │   ├── prompts/
+│   │   │   │   └── PromptManager.js # Agent prompt versioning
+│   │   │   ├── providers/
+│   │   │   │   ├── ProviderFactory.js
+│   │   │   │   ├── AnthropicProvider.js
+│   │   │   │   └── BedrockProvider.js
+│   │   │   ├── socket/
+│   │   │   │   └── socketHandlers.js
+│   │   │   └── index.js           # Server entry point
+│   │   └── data/                  # Data storage
+│   │       ├── config/            # App configuration
+│   │       ├── wellness/          # Daily wellness metrics & sessions
+│   │       └── knowledge/         # Knowledge base entries
 │   │
-│   └── shared/              # Shared types/constants
+│   └── shared/                    # Shared types/constants
+│       ├── types.js
+│       └── constants.js
 │
-├── ecosystem.config.js      # PM2 configuration
-└── package.json             # Root workspace config
+├── scripts/                       # Utility scripts
+│   ├── generate-jira-icon.js
+│   └── add-jira-banner.js
+│
+├── docs/                          # Documentation
+│   ├── AWS_BEDROCK_SETUP.md
+│   └── PAGE_ILLUSTRATIONS_GUIDE.md
+│
+├── ecosystem.config.js            # PM2 configuration
+├── package.json                   # Root workspace config
+└── README.md                      # This file
 ```
+
+---
 
 ## 🔧 Tech Stack
 
 ### Frontend
-- React 18.2
-- Vite 5.x
-- React Router 6
-- Zustand (state management)
-- Tailwind CSS 3.x
-- Socket.IO client
+- **React 18.2** - UI library
+- **Vite 5.x** - Build tool and dev server
+- **React Router 6** - Client-side routing
+- **Zustand** - Lightweight state management
+- **Tailwind CSS 3.x** - Utility-first styling
+- **Socket.IO Client** - Real-time communication
 
 ### Backend
-- Node.js 18+
-- Express.js 4.x
-- Socket.IO
-- Anthropic SDK (Claude API)
-- PM2
-- Winston (logging)
+- **Node.js 18+** - Runtime environment
+- **Express.js 4.x** - Web framework
+- **Socket.IO** - WebSocket server
+- **Anthropic SDK** - Claude API integration
+- **AWS SDK** - Bedrock access
+- **PM2** - Process management
+- **Winston** - Logging
+- **node-cron** - Scheduled tasks
 
-## 📝 Development Status
-
-### ✅ Phase 1 Complete (MVP Foundation)
-- [x] Monorepo structure
-- [x] Vintage Adventureland design system
-- [x] Basic navigation and layout
-- [x] Express server with Socket.IO
-- [x] BaseAgent class with Claude API integration
-- [x] Explorer agent character
-- [x] Agent interaction UI
-- [x] PM2 configuration
-
-### 🚧 Coming Next (Phase 2)
-- [ ] Remaining 5 character agents
-- [ ] Agent orchestration system
-- [ ] Task routing logic
-- [ ] Agent memory/history
-- [ ] Character illustrations
-
-## 🤝 Contributing
-
-This is a personal project inspired by [PortOS](https://github.com/atomantic/PortOS). Contributions, issues, and feature requests are welcome!
-
-## 📜 License
-
-MIT
-
-## 🙏 Acknowledgments
-
-- Inspired by [PortOS](https://github.com/atomantic/PortOS) by atomantic
-- Vintage Adventureland poster aesthetic
-- Claude AI by Anthropic
+### External APIs
+- **AWS Bedrock** - Claude AI models
+- **Oura Ring API** - Health and wellness data
+- **Jira REST API** - Project management integration
 
 ---
 
-**Let the expedition begin!** 🗺️✨
+## 🌟 Key Workflows
+
+### Morning Routine
+1. Oura Ring syncs overnight sleep data
+2. System triggers morning standup at 8:30 AM
+3. Guide agent analyzes your sleep, activity, and readiness
+4. Interactive chat session to plan your day
+5. Save plan summary to Base Camp journal
+
+### Evening Routine
+1. System triggers evening retro at 6:00 PM
+2. Guide shows your morning plan for reference
+3. Chat about what you accomplished
+4. Leave notes for tomorrow morning
+5. Review wellness trends and adjust habits
+
+### Working with Agents
+1. Navigate to Expedition page
+2. Select an agent (Guide, Explorer, etc.)
+3. Describe your task or question
+4. Receive streaming AI responses
+5. Continue conversation as needed
+6. Agent maintains context throughout session
+
+### Managing Applications
+1. Go to Trading Post
+2. View all PM2-managed processes
+3. Start, stop, or restart applications
+4. Monitor logs and resource usage
+5. Configure process settings
+
+---
+
+## 📝 Development Status
+
+### ✅ Completed Features
+
+**Core Infrastructure**
+- [x] Monorepo structure with workspaces
+- [x] Client-server architecture with Socket.IO
+- [x] PM2 process management
+- [x] AWS Bedrock integration
+- [x] Vintage Adventureland design system
+- [x] Navigation and routing
+- [x] Settings and configuration management
+
+**Agent System**
+- [x] BaseAgent class architecture
+- [x] Agent orchestration system
+- [x] Streaming conversation interface
+- [x] Guide agent (wellness coaching)
+- [x] Explorer agent (code analysis)
+- [x] Multi-turn conversation support
+- [x] Character illustrations
+
+**Wellness Integration**
+- [x] Oura Ring OAuth 2.0 connection
+- [x] Daily metrics dashboard (sleep, activity, readiness)
+- [x] 7-day wellness trend charts
+- [x] Hourly data syncing
+- [x] Stress monitoring and alerts
+- [x] Interactive standup/retro sessions
+- [x] Session persistence and journaling
+- [x] Natural conversation with Guide agent
+
+**Pages**
+- [x] Dashboard with overview cards
+- [x] Expedition (agent orchestration)
+- [x] Medic (wellness monitoring)
+- [x] Base Camp (daily planning journal)
+- [x] Trading Post (PM2 management)
+- [x] Map Room (knowledge base)
+- [x] Outpost (terminal and Git tools)
+- [x] Jira integration
+- [x] Settings (providers, models, prompts, integrations)
+
+**UI/UX**
+- [x] Vintage hero banner images for all pages
+- [x] Responsive mobile-friendly design
+- [x] Real-time notifications
+- [x] Loading states and error handling
+- [x] Vintage styling effects (letterpress, shadows, textures)
+
+### 🚧 In Progress
+- [ ] Knowledge base semantic search
+- [ ] Terminal functionality in Outpost
+- [ ] Git operations in Outpost
+- [ ] Additional agent characters (Trader, Navigator, Archaeologist, Scout)
+
+### 🔮 Future Enhancements
+- [ ] Multi-agent task coordination
+- [ ] Agent memory and learning
+- [ ] Calendar integration
+- [ ] Email integration
+- [ ] Mobile app (React Native)
+- [ ] Voice interaction with agents
+- [ ] Task templates and workflows
+- [ ] Team collaboration features
+- [ ] Export/import configurations
+- [ ] Plugin system for extensibility
+
+---
+
+## 🔐 Security & Privacy
+
+- **Local-first**: All data stored locally on your machine
+- **No external data sharing**: Your health data never leaves your system
+- **Secure OAuth**: Industry-standard OAuth 2.0 for third-party integrations
+- **API key encryption**: Credentials stored securely in local configuration
+- **AWS IAM**: Use IAM roles and policies for Bedrock access
+
+---
+
+## 🤝 Contributing
+
+This is a personal productivity system, but contributions are welcome! If you'd like to contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow the existing code style
+- Maintain the vintage Adventureland theme
+- Add comments for complex logic
+- Test thoroughly before submitting
+- Update documentation as needed
+
+---
+
+## 📜 License
+
+MIT License - See LICENSE file for details
+
+---
+
+## 🙏 Acknowledgments
+
+- **Inspired by**: [PortOS](https://github.com/atomantic/PortOS) by atomantic
+- **AI Provider**: Claude by Anthropic
+- **Design Inspiration**: Vintage Disney Adventureland posters and SEA (Society of Explorers and Adventurers) lore
+- **Health Tracking**: Oura Ring API
+- **Icons & Illustrations**: Generated with AI (ChatGPT DALL-E)
+
+---
+
+## 📞 Support
+
+For issues, questions, or feature requests:
+- Open an issue on GitHub
+- Check existing documentation in `/docs`
+- Review the project wiki (coming soon)
+
+---
+
+**Ready for adventure?** 🗺️✨
+
+Start your journey with Chief of Staff and transform your daily routine into an epic expedition!
