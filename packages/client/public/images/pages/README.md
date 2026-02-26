@@ -10,6 +10,8 @@ Place your generated page header images here:
 - `trading-post-header.png` - Trading Post page (PM2 management)
 - `map-room-header.png` - Map Room page (knowledge base)
 - `outpost-header.png` - Outpost page (terminal & git tools)
+- `base-camp-header.png` - Base Camp page (daily planning & reflection journal)
+- `medic-header.png` - Medic page (health metrics & wellness monitoring)
 
 ## Image Specifications
 

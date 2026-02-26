@@ -39,14 +39,27 @@ const BaseCamp = () => {
 
   return (
     <div className="min-h-screen bg-cream paper-texture py-8 px-6">
-      {/* Header */}
+      {/* Hero Header */}
       <div className="max-w-6xl mx-auto mb-8">
-        <h1 className="font-poster text-6xl text-vintage-text mb-4 text-center">
-          🏕️ Base Camp
-        </h1>
-        <p className="font-serif text-xl text-vintage-text text-center max-w-2xl mx-auto opacity-80">
-          Your daily planning and reflection journal. Track your standup plans and retrospective notes.
-        </p>
+        <div className="relative rounded-lg overflow-hidden shadow-vintage">
+          <img
+            src="/images/pages/base-camp-header.png"
+            alt="Base Camp"
+            className="w-full h-48 md:h-64 object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
+          <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+            <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
+              🏕️ Base Camp
+            </h1>
+            <p className="text-lg text-vintage-text opacity-90 drop-shadow">
+              Your daily planning and reflection journal. Track your standup plans and retrospective notes.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Session Journal */}

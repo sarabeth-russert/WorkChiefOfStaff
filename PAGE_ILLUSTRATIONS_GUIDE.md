@@ -88,6 +88,40 @@ Vintage 1950s expedition camp equipment illustration, SEA style. Field desk with
 
 ---
 
+### 5. Base Camp 🏕️
+
+**Theme:** Cozy planning and reflection headquarters with journal
+
+```
+Vintage 1950s base camp planning tent illustration in SEA Society of Explorers and Adventurers style. Wide panoramic scene showing warm, inviting expedition base camp with large canvas tent interior, wooden planning table with open journals and daily logs, morning coffee setup, lanterns providing warm glow, comfortable seating area. Warm color palette with cream, sand, jungle green, sunrise golden tones. Retro illustrated poster aesthetic, hand-drawn style, peaceful reflective morning atmosphere. Background shows dawn breaking over mountain peaks through tent opening. Art style: vintage Disney Adventureland attraction poster, clean lines, warm lighting, professional illustration. Landscape banner format, 1920x600 pixels.
+```
+
+**Save as:** `base-camp-header.png`
+
+**Alternative prompt (minimalist):**
+```
+Vintage 1950s expedition journal and planning tools illustration, SEA style. Open leather-bound journal with handwritten daily entries, fountain pen, morning coffee cup, compass, brass lantern, wooden desk surface. Warm cream and golden sunrise tones. Retro illustrated aesthetic, top-down composition. Art style: vintage journaling poster, clean lines, landscape banner format.
+```
+
+---
+
+### 6. Medic 🏥
+
+**Theme:** Expedition medical station and wellness monitoring
+
+```
+Vintage 1950s expedition medic station illustration in SEA Society of Explorers and Adventurers style. Wide panoramic scene showing well-equipped field medical tent with vintage medical equipment, health charts and vitals tracking boards on walls, organized supply shelves, examination area with warm lighting, wellness monitoring instruments displayed. Warm color palette with medical white accents, terracotta, teal, cream tones. Retro illustrated poster aesthetic, hand-drawn style, caring professional atmosphere. Background shows tropical setting through canvas tent flaps with lush greenery. Art style: vintage Disney Adventureland attraction poster, clean lines, warm lighting, professional illustration. Landscape banner format, 1920x600 pixels.
+```
+
+**Save as:** `medic-header.png`
+
+**Alternative prompt (minimalist):**
+```
+Vintage 1950s medical field kit illustration, SEA style. Open medic bag with vintage health monitoring equipment, wellness charts, medical journal with vitals tracking, brass stethoscope, thermometer, organized medical supplies on wooden field desk. Warm teal and cream tones with terracotta accents. Retro illustrated aesthetic, organized flat lay composition. Art style: vintage medical poster, clean lines, landscape banner format.
+```
+
+---
+
 ## 📁 File Structure
 
 Place generated images in:
@@ -96,16 +130,18 @@ Place generated images in:
 ├── expedition-header.png
 ├── trading-post-header.png
 ├── map-room-header.png
-└── outpost-header.png
+├── outpost-header.png
+├── base-camp-header.png
+└── medic-header.png
 ```
 
 ---
 
 ## 🎨 Style Consistency Tips
 
-### For All 4 Images:
+### For All 6 Images:
 
-1. **Use the same AI service** for all 4 images
+1. **Use the same AI service** for all 6 images
 2. **Generate in same session** for style consistency
 3. **Keep same aspect ratio** (landscape banner: 1920x600 or 1200x400)
 4. **Maintain color harmony:**
@@ -113,6 +149,8 @@ Place generated images in:
    - Trading Post: Mustard + sand
    - Map Room: Burgundy + teal
    - Outpost: Sunset orange + sand
+   - Base Camp: Golden sunrise + cream
+   - Medic: Teal + cream + terracotta
 
 ### Style Keywords (use in all prompts):
 - "SEA Society of Explorers and Adventurers style"
@@ -285,6 +323,18 @@ Then use responsive images:
 - Accent: Sand `#E8D4A8`
 - Background: Cream `#FFF8E7`
 
+### Base Camp 🏕️
+- Primary: Golden Sunrise `#F4C542`
+- Secondary: Jungle Green `#4A7859`
+- Accent: Sand `#E8D4A8`
+- Background: Cream `#FFF8E7`
+
+### Medic 🏥
+- Primary: Teal `#479B99`
+- Secondary: Terracotta `#D4735E`
+- Accent: Medical White `#F5F5F5`
+- Background: Cream `#FFF8E7`
+
 ---
 
 ## 🖌️ Alternative Illustration Ideas
@@ -311,17 +361,27 @@ Then use responsive images:
 - Expedition camp layout map (top-down view)
 - Frontier watchtower with landscape beyond
 
+**Base Camp:**
+- Open expedition journal with morning notes
+- Cozy tent interior with planning table and coffee
+- Dawn landscape with journal and compass on campsite table
+
+**Medic:**
+- Vintage medical field kit with wellness charts
+- Expedition health monitoring station
+- Organized medical supplies with vintage equipment
+
 ---
 
 ## ✅ Quick Checklist
 
 Before using images:
 
-- [ ] All 4 images generated
+- [ ] All 6 images generated
 - [ ] Consistent style across all images
 - [ ] Correct dimensions (1920x600 or 1200x400)
 - [ ] PNG format with appropriate background
-- [ ] Files named correctly (expedition-header.png, etc.)
+- [ ] Files named correctly (expedition-header.png, base-camp-header.png, etc.)
 - [ ] Optimized file sizes (under 500KB each)
 - [ ] Colors match page theme
 - [ ] Placed in `/packages/client/public/images/pages/`
@@ -379,4 +439,4 @@ Show illustration while page content loads
 
 Ready to generate your page illustrations! 🎨🌴
 
-Generate all 4 using the prompts above, then let me know and I'll help integrate them into your pages!
+Generate all 6 using the prompts above, then let me know and I'll help integrate them into your pages!

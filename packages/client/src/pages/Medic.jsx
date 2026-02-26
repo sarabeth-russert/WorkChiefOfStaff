@@ -160,7 +160,7 @@ const Medic = () => {
       {/* Hero Header */}
       <div className="relative rounded-lg overflow-hidden shadow-vintage">
         <img
-          src="/images/pages/wellness-header.png"
+          src="/images/pages/medic-header.png"
           alt="Medic Station"
           className="w-full h-48 md:h-64 object-cover"
           onError={(e) => {
