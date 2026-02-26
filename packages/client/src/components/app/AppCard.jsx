@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, Button } from '../ui';
 
-const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs }) => {
+const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs, onDelete }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'online':
@@ -101,41 +101,53 @@ const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs }) => {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
-        {!isRunning && (
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => onStart(app.id)}
-          >
-            Start
-          </Button>
-        )}
-        {isRunning && (
-          <>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          {!isRunning && (
             <Button
-              variant="secondary"
+              variant="primary"
               size="sm"
-              onClick={() => onRestart(app.id)}
+              onClick={() => onStart(app.id)}
             >
-              Restart
+              Start
             </Button>
+          )}
+          {isRunning && (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => onRestart(app.id)}
+              >
+                Restart
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onStop(app.id)}
+              >
+                Stop
+              </Button>
+            </>
+          )}
+          {isRunning && (
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={() => onStop(app.id)}
+              onClick={() => onViewLogs(app)}
             >
-              Stop
+              Logs
             </Button>
-          </>
-        )}
-        {isRunning && (
+          )}
+        </div>
+        {!isRunning && onDelete && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onViewLogs(app)}
+            onClick={() => onDelete(app.id)}
+            className="w-full text-terracotta hover:text-terracotta-dark hover:bg-terracotta hover:bg-opacity-10"
           >
-            Logs
+            Unregister App
           </Button>
         )}
       </div>

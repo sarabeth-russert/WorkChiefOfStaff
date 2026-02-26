@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '../ui';
 
 const AgentCard = ({ agent, selected, onSelect }) => {
+  const [imageError, setImageError] = useState(false);
   const agentColors = {
     explorer: 'border-jungle',
     trader: 'border-mustard',
@@ -21,7 +22,18 @@ const AgentCard = ({ agent, selected, onSelect }) => {
       onClick={onSelect}
     >
       <div className="flex items-start gap-4">
-        <div className="text-5xl">{agent.icon}</div>
+        <div className="w-20 h-20 flex items-center justify-center flex-shrink-0">
+          {!imageError && agent.imagePath ? (
+            <img
+              src={agent.imagePath}
+              alt={agent.name}
+              className="w-full h-full object-contain rounded-lg"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <div className="text-5xl">{agent.icon}</div>
+          )}
+        </div>
         <div className="flex-1">
           <h3 className="text-2xl font-poster text-vintage-text mb-1">
             {agent.name}

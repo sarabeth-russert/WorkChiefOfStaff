@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navigation = () => {
   const location = useLocation();
+  const [logoError, setLogoError] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: '🏠' },
-    { path: '/expedition', label: 'Expedition', icon: '🗺️' },
-    { path: '/trading-post', label: 'Trading Post', icon: '💰' },
-    { path: '/map-room', label: 'Map Room', icon: '📍' },
-    { path: '/outpost', label: 'Outpost', icon: '⛺' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' }
+    { path: '/expedition', label: 'Expedition' },
+    { path: '/trading-post', label: 'Trading Post' },
+    { path: '/map-room', label: 'Map Room' },
+    { path: '/outpost', label: 'Outpost' },
+    { path: '/jira', label: 'Jira' },
+    { path: '/medic', label: 'Medic' },
+    { path: '/base-camp', label: 'Base Camp' },
+    { path: '/settings', label: 'Settings' }
   ];
 
   return (
@@ -19,7 +22,16 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
-            <span className="text-4xl">🌴</span>
+            {!logoError ? (
+              <img
+                src="/images/logo.png"
+                alt="Adventureland Logo"
+                className="w-20 h-20 object-contain"
+                onError={() => setLogoError(true)}
+              />
+            ) : (
+              <span className="text-6xl">🌴</span>
+            )}
             <div className="flex flex-col">
               <h1 className="text-3xl font-poster text-cream text-letterpress leading-none">
                 Adventureland
@@ -39,7 +51,7 @@ const Navigation = () => {
                   key={item.path}
                   to={item.path}
                   className={`
-                    flex items-center gap-2 px-4 py-2 font-ui uppercase tracking-wide text-sm
+                    px-4 py-2 font-ui uppercase tracking-wide text-sm
                     transition-all duration-150 border-2 rounded
                     ${isActive
                       ? 'bg-cream text-jungle-dark border-cream shadow-vintage-pressed translate-y-0.5'
@@ -47,8 +59,7 @@ const Navigation = () => {
                     }
                   `}
                 >
-                  <span className="text-lg">{item.icon}</span>
-                  <span>{item.label}</span>
+                  {item.label}
                 </Link>
               );
             })}

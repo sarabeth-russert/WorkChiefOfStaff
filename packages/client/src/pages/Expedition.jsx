@@ -14,7 +14,9 @@ const Expedition = () => {
     currentAgent,
     isProcessing,
     connected,
-    error
+    error,
+    conversationHistory,
+    clearConversationHistory
   } = useAgentStore();
 
   const [selectedAgent, setSelectedAgent] = useState(null);
@@ -54,18 +56,27 @@ const Expedition = () => {
 
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-6xl font-poster text-vintage-text text-letterpress mb-4">
-          🗺️ Expedition
-        </h1>
-        <p className="text-lg text-vintage-text opacity-80">
-          Chief of Staff - AI Agent Orchestration
-        </p>
-        {!connected && (
-          <p className="text-terracotta-dark mt-2">
-            ⚠️ Connecting to server...
+      {/* Hero Header with Image */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage">
+        <img
+          src="/images/pages/expedition-header.png"
+          alt="Expedition"
+          className="w-full h-48 md:h-64 object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
+        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
+            Expedition
+          </h1>
+          <p className="text-lg text-vintage-text opacity-90 drop-shadow">
+            Chief of Staff - AI Agent Orchestration
           </p>
-        )}
+          {!connected && (
+            <p className="text-terracotta-dark mt-2 drop-shadow">
+              ⚠️ Connecting to server...
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Agent Selection */}
@@ -90,6 +101,19 @@ const Expedition = () => {
       {/* Task Input */}
       {selectedAgent && (
         <Card>
+          {conversationHistory[selectedAgent.type]?.length > 0 && (
+            <div className="mb-4 flex items-center justify-between p-3 bg-sand rounded border-2 border-mustard">
+              <p className="text-sm text-vintage-text">
+                <strong>Conversation Active:</strong> {conversationHistory[selectedAgent.type].length / 2} messages in history
+              </p>
+              <button
+                onClick={() => clearConversationHistory(selectedAgent.type)}
+                className="px-3 py-1 text-sm font-ui uppercase bg-terracotta text-cream rounded border-2 border-terracotta-dark hover:bg-terracotta-dark transition-colors"
+              >
+                Clear History
+              </button>
+            </div>
+          )}
           <TaskInput
             onSubmit={handleSubmitTask}
             isProcessing={isProcessing}

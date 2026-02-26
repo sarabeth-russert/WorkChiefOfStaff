@@ -23,11 +23,25 @@ const TaskInput = ({ onSubmit, isProcessing, selectedAgent }) => {
         disabled={isProcessing || !selectedAgent}
       />
       <div className="flex items-center justify-between">
-        <p className="text-sm text-vintage-text opacity-70">
+        <p className="text-sm text-vintage-text opacity-70 flex items-center gap-2">
           {selectedAgent ? (
             <>
-              <span className="text-lg mr-2">{selectedAgent.icon}</span>
-              {selectedAgent.name} is ready to help
+              {selectedAgent.imagePath ? (
+                <img
+                  src={selectedAgent.imagePath}
+                  alt={selectedAgent.name}
+                  className="w-10 h-10 rounded-full object-cover border-2 border-vintage-text shadow-sm"
+                  onError={(e) => {
+                    // Fallback to icon if image fails to load
+                    e.target.style.display = 'none';
+                    e.target.nextSibling.style.display = 'inline';
+                  }}
+                />
+              ) : null}
+              <span className="text-lg" style={{ display: selectedAgent?.imagePath ? 'none' : 'inline' }}>
+                {selectedAgent.icon}
+              </span>
+              <span>{selectedAgent.name} is ready to help</span>
             </>
           ) : (
             'Please select an agent first'

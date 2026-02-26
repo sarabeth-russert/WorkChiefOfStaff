@@ -13,12 +13,13 @@ export function setupSocketHandlers(io) {
     // Agent task submission with streaming via orchestrator
     socket.on('agent:task', async (data) => {
       try {
-        const { agentType, taskType, task } = data;
+        const { agentType, taskType, task, history } = data;
 
         logger.info('Agent task received via socket', {
           socketId: socket.id,
           agentType,
-          taskType
+          taskType,
+          historyLength: history ? history.length : 0
         });
 
         const taskId = Date.now();
@@ -32,6 +33,7 @@ export function setupSocketHandlers(io) {
           taskType: taskType || 'custom',
           task,
           agentType,
+          history, // Pass conversation history
           stream: true,
           onChunk: (event) => {
             if (event.type === 'chunk') {
@@ -49,6 +51,9 @@ export function setupSocketHandlers(io) {
 
               socket.emit('agent:task:completed', {
                 taskId,
+                agentType: event.agent.type,
+                task, // Include task for history
+                response: event.data, // Include response for history
                 success: true
               });
             } else if (event.type === 'error') {

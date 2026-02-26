@@ -81,6 +81,55 @@ const useAppStore = create((set, get) => ({
     }
   },
 
+  registerApp: async (appData) => {
+    try {
+      const response = await fetch(`${API_URL}/api/apps`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(appData)
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        await get().fetchApps();
+      }
+
+      return data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  deleteApp: async (appId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/apps/${appId}`, {
+        method: 'DELETE'
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        await get().fetchApps();
+      }
+
+      return data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
+  getLogs: async (appId, lines = 100) => {
+    try {
+      const response = await fetch(`${API_URL}/api/apps/${appId}/logs?lines=${lines}`);
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      set({ error: error.message });
+      throw error;
+    }
+  },
+
   fetchSystemStats: async () => {
     try {
       const response = await fetch(`${API_URL}/api/system/stats`);

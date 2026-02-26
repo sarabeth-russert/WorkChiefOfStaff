@@ -222,33 +222,9 @@ router.get('/models', async (req, res) => {
 });
 
 /**
- * GET /api/config/models/:provider
- * Models for specific provider
- */
-router.get('/models/:provider', async (req, res) => {
-  try {
-    const { provider: providerType } = req.params;
-    const config = configStore.getProviderConfig(providerType);
-    const provider = providerFactory.getProvider(providerType, config);
-
-    const models = provider.getAvailableModels();
-
-    res.json({
-      success: true,
-      data: models
-    });
-  } catch (error) {
-    logger.error('Failed to get provider models', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-/**
  * GET /api/config/models/current
  * Currently selected model
+ * NOTE: Must be defined BEFORE /models/:provider to avoid matching conflict
  */
 router.get('/models/current', async (req, res) => {
   try {
@@ -295,6 +271,32 @@ router.post('/models/current', async (req, res) => {
     });
   } catch (error) {
     logger.error('Failed to set current model', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/config/models/:provider
+ * Models for specific provider
+ * NOTE: Must be defined AFTER /models/current to avoid matching conflict
+ */
+router.get('/models/:provider', async (req, res) => {
+  try {
+    const { provider: providerType } = req.params;
+    const config = configStore.getProviderConfig(providerType);
+    const provider = providerFactory.getProvider(providerType, config);
+
+    const models = provider.getAvailableModels();
+
+    res.json({
+      success: true,
+      data: models
+    });
+  } catch (error) {
+    logger.error('Failed to get provider models', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message

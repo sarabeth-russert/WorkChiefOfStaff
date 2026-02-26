@@ -14,6 +14,9 @@ import { setupSocketHandlers } from './socket/handlers.js';
 import configStore from './config/ConfigStore.js';
 import promptManager from './prompts/PromptManager.js';
 import providerFactory from './providers/ProviderFactory.js';
+import ouraManager from './integrations/OuraManager.js';
+import wellnessScheduler from './wellness/WellnessScheduler.js';
+import wellnessMeetings from './wellness/WellnessMeetings.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,8 +49,9 @@ const httpServer = createServer(app);
 // Setup Socket.IO
 const io = new Server(httpServer, {
   cors: {
-    origin: ['http://localhost:5555', 'http://localhost:3000'],
-    methods: ['GET', 'POST']
+    origin: ['http://localhost:5173', 'http://localhost:5555', 'http://localhost:3000'],
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -81,6 +85,9 @@ app.use((err, req, res, next) => {
 // Setup Socket.IO handlers
 setupSocketHandlers(io);
 
+// Initialize wellness meetings with Socket.IO
+wellnessMeetings.setIO(io);
+
 // Initialize configuration system
 async function initializeServer() {
   try {
@@ -96,6 +103,37 @@ async function initializeServer() {
     const providerConfig = configStore.getCurrentProvider();
     providerFactory.setCurrentProvider(providerConfig.type, providerConfig);
     logger.info('Provider initialized', { type: providerConfig.type });
+
+    // Initialize wellness scheduler if Oura is configured
+    if (ouraManager.isConfigured()) {
+      logger.info('Oura Ring detected, initializing wellness scheduler');
+
+      // Register wellness meeting callbacks
+      wellnessScheduler.registerCallbacks({
+        onStandup: async () => {
+          logger.info('Wellness scheduler: Triggering standup meeting');
+          await wellnessMeetings.triggerStandupMeeting();
+        },
+        onRetro: async () => {
+          logger.info('Wellness scheduler: Triggering retro meeting');
+          await wellnessMeetings.triggerRetroMeeting();
+        },
+        onStressCheck: async (threshold) => {
+          logger.info('Wellness scheduler: Checking stress levels', { threshold });
+          await wellnessMeetings.checkStressLevels(threshold);
+        },
+        onOuraSync: async () => {
+          logger.info('Wellness scheduler: Syncing Oura data');
+          await wellnessMeetings.syncOuraData();
+        }
+      });
+
+      // Start wellness scheduler
+      await wellnessScheduler.start();
+      logger.info('Wellness scheduler started successfully');
+    } else {
+      logger.info('Oura Ring not configured, wellness scheduler disabled');
+    }
   } catch (error) {
     logger.error('Failed to initialize server', { error: error.message });
   }
@@ -115,6 +153,13 @@ httpServer.listen(PORT, async () => {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
+
+  // Stop wellness scheduler if running
+  if (ouraManager.isConfigured()) {
+    wellnessScheduler.stop();
+    logger.info('Wellness scheduler stopped');
+  }
+
   httpServer.close(() => {
     logger.info('Server closed');
     process.exit(0);
