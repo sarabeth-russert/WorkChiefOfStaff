@@ -529,4 +529,432 @@ router.get('/jira/me', async (req, res) => {
   }
 });
 
+// Wellness routes
+import ouraManager from '../integrations/OuraManager.js';
+import wellnessDataStore from '../wellness/WellnessDataStore.js';
+import wellnessScheduler from '../wellness/WellnessScheduler.js';
+import wellnessMeetings from '../wellness/WellnessMeetings.js';
+import orchestrator from '../agents/AgentOrchestrator.js';
+
+router.post('/wellness/configure', (req, res) => {
+  try {
+    ouraManager.configure(req.body);
+    res.json({ success: true, configured: ouraManager.isConfigured() });
+  } catch (error) {
+    logger.error('Error configuring wellness', error);
+    res.status(500).json({ error: 'Failed to configure wellness' });
+  }
+});
+
+router.get('/wellness/test', async (req, res) => {
+  try {
+    const result = await ouraManager.testConnection();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error testing wellness connection', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/wellness/daily/:date?', async (req, res) => {
+  try {
+    const date = req.params.date || new Date().toISOString().split('T')[0];
+    const metrics = await wellnessDataStore.getDailyMetrics(date);
+    res.json({ success: true, metrics, date });
+  } catch (error) {
+    logger.error('Error fetching daily wellness metrics', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/wellness/trends', async (req, res) => {
+  try {
+    const days = parseInt(req.query.days) || 7;
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    const trends = await wellnessDataStore.getMetricsRange(startDate, endDate);
+    res.json({ success: true, trends, startDate, endDate, days });
+  } catch (error) {
+    logger.error('Error fetching wellness trends', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/wellness/refresh', async (req, res) => {
+  try {
+    // Force sync data from Oura
+    const date = new Date().toISOString().split('T')[0];
+    const dailyData = await ouraManager.getDailySleep(date, date);
+
+    if (dailyData && dailyData.data && dailyData.data.length > 0) {
+      const sleepData = dailyData.data[0];
+      await wellnessDataStore.saveDailyMetrics(date, {
+        sleep: sleepData,
+        lastSync: new Date().toISOString()
+      });
+    }
+
+    res.json({ success: true, message: 'Data synced successfully', date });
+  } catch (error) {
+    logger.error('Error refreshing wellness data', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/wellness/settings', async (req, res) => {
+  try {
+    const settings = await wellnessScheduler.loadSettings();
+    res.json({ success: true, settings });
+  } catch (error) {
+    logger.error('Error fetching wellness settings', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.put('/wellness/settings', async (req, res) => {
+  try {
+    const settings = await wellnessScheduler.updateSettings(req.body);
+    res.json({ success: true, settings });
+  } catch (error) {
+    logger.error('Error updating wellness settings', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// OAuth2 routes for Oura
+router.post('/wellness/oauth/init', (req, res) => {
+  try {
+    const { clientId, clientSecret, redirectUri } = req.body;
+
+    if (!clientId || !clientSecret || !redirectUri) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: clientId, clientSecret, redirectUri'
+      });
+    }
+
+    // Store client credentials
+    ouraManager.configure({
+      clientId,
+      clientSecret,
+      accessToken: null,
+      refreshToken: null,
+      expiresAt: null
+    });
+
+    // Generate authorization URL
+    const state = Math.random().toString(36).substring(7); // Simple state for CSRF protection
+    const authUrl = ouraManager.getAuthorizationUrl(redirectUri, state);
+
+    res.json({
+      success: true,
+      authUrl,
+      state
+    });
+  } catch (error) {
+    logger.error('Error initializing OAuth', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/oauth/callback', async (req, res) => {
+  try {
+    const { code, redirectUri } = req.body;
+
+    if (!code || !redirectUri) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: code, redirectUri'
+      });
+    }
+
+    // Exchange code for tokens
+    const tokens = await ouraManager.exchangeCodeForToken(code, redirectUri);
+
+    res.json({
+      success: true,
+      configured: true,
+      expiresAt: tokens.expiresAt
+    });
+  } catch (error) {
+    logger.error('Error handling OAuth callback', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// On-demand wellness meeting triggers
+router.post('/wellness/standup/trigger', async (req, res) => {
+  try {
+    const result = await wellnessMeetings.triggerStandupOnDemand();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error triggering on-demand standup', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/retro/trigger', async (req, res) => {
+  try {
+    const result = await wellnessMeetings.triggerRetroOnDemand();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error triggering on-demand retro', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/sync', async (req, res) => {
+  try {
+    const result = await wellnessMeetings.syncOuraData();
+    res.json(result);
+  } catch (error) {
+    logger.error('Error syncing Oura data', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Check if standup/retro delivered today
+router.get('/wellness/standup/status', async (req, res) => {
+  try {
+    const delivered = await wellnessMeetings.hasStandupBeenDeliveredToday();
+    res.json({ success: true, delivered });
+  } catch (error) {
+    logger.error('Error checking standup status', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/wellness/retro/status', async (req, res) => {
+  try {
+    const delivered = await wellnessMeetings.hasRetroBeenDeliveredToday();
+    res.json({ success: true, delivered });
+  } catch (error) {
+    logger.error('Error checking retro status', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Session management routes
+router.get('/wellness/session/active', async (req, res) => {
+  try {
+    const { date, type } = req.query;
+
+    if (!date || !type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: date and type'
+      });
+    }
+
+    if (!['standup', 'retro'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid type. Must be standup or retro'
+      });
+    }
+
+    const activeSession = await wellnessDataStore.getActiveSession(date, type);
+    res.json({
+      success: true,
+      session: activeSession,
+      hasActiveSession: !!activeSession
+    });
+  } catch (error) {
+    logger.error('Error checking active session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/session/start', async (req, res) => {
+  try {
+    const { date, type, initialGuidance } = req.body;
+
+    if (!date || !type) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: date and type'
+      });
+    }
+
+    if (!['standup', 'retro'].includes(type)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid type. Must be standup or retro'
+      });
+    }
+
+    // Check if there's already an active session
+    const existingSession = await wellnessDataStore.getActiveSession(date, type);
+    if (existingSession) {
+      return res.json({
+        success: true,
+        session: existingSession,
+        message: 'Active session already exists'
+      });
+    }
+
+    // Create new session
+    const sessionData = {
+      type,
+      initialGuidance: initialGuidance || '',
+      conversation: [],
+      status: 'active',
+      startedAt: new Date().toISOString()
+    };
+
+    const session = await wellnessDataStore.saveSession(date, sessionData);
+    logger.info('Created new wellness session', { date, type, sessionId: session.id });
+
+    res.json({ success: true, session });
+  } catch (error) {
+    logger.error('Error starting session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/session/message', async (req, res) => {
+  try {
+    const { date, sessionId, message, conversationHistory } = req.body;
+
+    if (!date || !sessionId || !message) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: date, sessionId, and message'
+      });
+    }
+
+    // Append user message to session
+    const userMessage = {
+      role: 'user',
+      content: message,
+      timestamp: new Date().toISOString()
+    };
+
+    await wellnessDataStore.appendToSession(date, sessionId, userMessage);
+
+    // Call Guide agent via orchestrator
+    const history = conversationHistory || [];
+    const guideResponse = await orchestrator.executeTask({
+      taskType: 'wellness',
+      task: message,
+      agentType: 'guide',
+      history
+    });
+
+    // Append Guide response to session
+    const assistantMessage = {
+      role: 'assistant',
+      content: guideResponse.response || guideResponse.error || 'I encountered an issue processing your message.',
+      timestamp: new Date().toISOString()
+    };
+
+    const updatedSession = await wellnessDataStore.appendToSession(date, sessionId, assistantMessage);
+
+    logger.info('Processed wellness session message', {
+      date,
+      sessionId,
+      guideSuccess: guideResponse.success
+    });
+
+    res.json({
+      success: true,
+      session: updatedSession,
+      response: assistantMessage.content
+    });
+  } catch (error) {
+    logger.error('Error processing session message', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/wellness/session/complete', async (req, res) => {
+  try {
+    const { date, sessionId, summary } = req.body;
+
+    if (!date || !sessionId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: date and sessionId'
+      });
+    }
+
+    const completedSession = await wellnessDataStore.completeSession(
+      date,
+      sessionId,
+      summary || {}
+    );
+
+    logger.info('Completed wellness session', { date, sessionId });
+
+    res.json({ success: true, session: completedSession });
+  } catch (error) {
+    logger.error('Error completing session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/wellness/session/:sessionId', async (req, res) => {
+  try {
+    const { date } = req.query;
+    const { sessionId } = req.params;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameter: date'
+      });
+    }
+
+    const dailyData = await wellnessDataStore.getDailyMetrics(date);
+
+    if (!dailyData || !dailyData.sessions) {
+      return res.status(404).json({
+        success: false,
+        error: 'No sessions found for this date'
+      });
+    }
+
+    const session = dailyData.sessions.find(s => s.id === sessionId);
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: 'Session not found'
+      });
+    }
+
+    res.json({ success: true, session });
+  } catch (error) {
+    logger.error('Error retrieving session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/wellness/sessions', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: startDate and endDate'
+      });
+    }
+
+    const sessions = await wellnessDataStore.getSessionsRange(startDate, endDate);
+
+    logger.info('Retrieved wellness sessions', {
+      startDate,
+      endDate,
+      count: sessions.length
+    });
+
+    res.json({ success: true, sessions, count: sessions.length });
+  } catch (error) {
+    logger.error('Error retrieving sessions', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

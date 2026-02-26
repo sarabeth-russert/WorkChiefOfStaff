@@ -6,12 +6,13 @@ const Navigation = () => {
   const [logoError, setLogoError] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Dashboard' },
     { path: '/expedition', label: 'Expedition' },
     { path: '/trading-post', label: 'Trading Post' },
     { path: '/map-room', label: 'Map Room' },
     { path: '/outpost', label: 'Outpost' },
     { path: '/jira', label: 'Jira' },
+    { path: '/medic', label: 'Medic' },
+    { path: '/base-camp', label: 'Base Camp' },
     { path: '/settings', label: 'Settings' }
   ];
 
