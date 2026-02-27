@@ -1,7 +1,54 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
+  const [wellnessScore, setWellnessScore] = useState(null);
+  const [todayEvents, setTodayEvents] = useState(null);
+  const [activeTickets, setActiveTickets] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      // Fetch wellness data
+      const wellnessResponse = await fetch(`${apiUrl}/api/wellness/daily`).catch(() => null);
+      if (wellnessResponse?.ok) {
+        const wellnessData = await wellnessResponse.json();
+        if (wellnessData.metrics?.readiness?.score) {
+          setWellnessScore(wellnessData.metrics.readiness.score);
+        }
+      }
+
+      // Fetch today's calendar events
+      const outlookResponse = await fetch(`${apiUrl}/api/outlook/events/today`).catch(() => null);
+      if (outlookResponse?.ok) {
+        const outlookData = await outlookResponse.json();
+        setTodayEvents(outlookData.count || 0);
+      }
+
+      // Fetch active Jira tickets
+      const jiraResponse = await fetch(`${apiUrl}/api/jira/issues/CONTECH?myIssuesOnly=true`).catch(() => null);
+      if (jiraResponse?.ok) {
+        const jiraData = await jiraResponse.json();
+        const inProgress = jiraData.issues?.filter(issue =>
+          issue.fields.status?.name === 'In Progress' ||
+          issue.fields.status?.name === 'In Development'
+        ).length || 0;
+        setActiveTickets(inProgress);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Section */}
@@ -10,68 +57,92 @@ const Dashboard = () => {
           Welcome to Adventureland
         </h1>
         <p className="text-xl text-vintage-text opacity-80 max-w-2xl mx-auto">
-          Chart your course through code with AI agents as your guides and knowledge as your compass.
+          Your command center for productivity, wellness, and expedition planning
         </p>
       </div>
 
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-6">
-            <img
-              src="/images/dashboard/active-agents.png"
-              alt="Active Agents"
-              className="w-32 h-32 object-contain"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
-            />
-            <div className="text-7xl" style={{ display: 'none' }}>🗺️</div>
-          </div>
-          <h3 className="text-3xl font-poster text-vintage-text mb-2">6</h3>
-          <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-            Active Agents
-          </p>
-        </Card>
+        {/* Wellness Score */}
+        <Link to="/medic">
+          <Card variant="canvas" className="text-center cursor-pointer hover:shadow-vintage-strong transition-shadow">
+            <div className="flex justify-center mb-6">
+              <img
+                src="/images/dashboard/wellness.png"
+                alt="Wellness"
+                className="w-32 h-32 object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="text-7xl" style={{ display: 'none' }}>💪</div>
+            </div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-2">
+              {loading ? '...' : wellnessScore !== null ? wellnessScore : '--'}
+            </h3>
+            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
+              Wellness Score
+            </p>
+            {wellnessScore === null && !loading && (
+              <p className="text-xs text-vintage-text opacity-50 mt-2">Not connected</p>
+            )}
+          </Card>
+        </Link>
 
-        <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-6">
-            <img
-              src="/images/dashboard/managed-apps.png"
-              alt="Managed Apps"
-              className="w-32 h-32 object-contain"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
-            />
-            <div className="text-7xl" style={{ display: 'none' }}>💰</div>
-          </div>
-          <h3 className="text-3xl font-poster text-vintage-text mb-2">0</h3>
-          <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-            Managed Apps
-          </p>
-        </Card>
+        {/* Today's Schedule */}
+        <Link to="/outbound-passage">
+          <Card variant="canvas" className="text-center cursor-pointer hover:shadow-vintage-strong transition-shadow">
+            <div className="flex justify-center mb-6">
+              <img
+                src="/images/dashboard/calendar.png"
+                alt="Calendar"
+                className="w-32 h-32 object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="text-7xl" style={{ display: 'none' }}>📅</div>
+            </div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-2">
+              {loading ? '...' : todayEvents !== null ? todayEvents : '--'}
+            </h3>
+            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
+              Today's Meetings
+            </p>
+            {todayEvents === null && !loading && (
+              <p className="text-xs text-vintage-text opacity-50 mt-2">Not connected</p>
+            )}
+          </Card>
+        </Link>
 
-        <Card variant="canvas" className="text-center">
-          <div className="flex justify-center mb-6">
-            <img
-              src="/images/dashboard/knowledge-items.png"
-              alt="Knowledge Items"
-              className="w-32 h-32 object-contain"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'block';
-              }}
-            />
-            <div className="text-7xl" style={{ display: 'none' }}>📍</div>
-          </div>
-          <h3 className="text-3xl font-poster text-vintage-text mb-2">0</h3>
-          <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-            Knowledge Items
-          </p>
-        </Card>
+        {/* Active Assignments */}
+        <Link to="/jira">
+          <Card variant="canvas" className="text-center cursor-pointer hover:shadow-vintage-strong transition-shadow">
+            <div className="flex justify-center mb-6">
+              <img
+                src="/images/dashboard/assignments.png"
+                alt="Assignments"
+                className="w-32 h-32 object-contain"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div className="text-7xl" style={{ display: 'none' }}>📋</div>
+            </div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-2">
+              {loading ? '...' : activeTickets !== null ? activeTickets : '--'}
+            </h3>
+            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
+              Active Assignments
+            </p>
+            {activeTickets === null && !loading && (
+              <p className="text-xs text-vintage-text opacity-50 mt-2">Not connected</p>
+            )}
+          </Card>
+        </Link>
       </div>
 
       {/* Feature Cards */}
@@ -82,66 +153,66 @@ const Dashboard = () => {
           iconImage="/images/dashboard/expedition.png"
         >
           <p className="mb-4 text-vintage-text">
-            Deploy your team of AI agents to tackle coding tasks, from reviews
-            to refactoring. Each agent brings unique skills and personality.
+            Chat with your AI guide agents to get help with tasks, plan your day,
+            and receive personalized wellness coaching.
           </p>
-          <a
-            href="/expedition"
+          <Link
+            to="/expedition"
             className="text-terracotta hover:text-terracotta-dark font-ui uppercase text-sm"
           >
             Launch Expedition →
-          </a>
+          </Link>
         </Card>
 
         <Card
-          title="Trading Post"
-          icon="💰"
-          iconImage="/images/dashboard/trading-post.png"
+          title="Field Assignments"
+          icon="📋"
+          iconImage="/images/dashboard/assignments.png"
         >
           <p className="mb-4 text-vintage-text">
-            Manage your local development applications with PM2 integration.
-            Start, stop, and monitor all your projects from one place.
+            Track your Jira tickets in a Kanban view. See what's in progress,
+            create new tickets, and manage your workload.
           </p>
-          <a
-            href="/trading-post"
+          <Link
+            to="/jira"
             className="text-terracotta hover:text-terracotta-dark font-ui uppercase text-sm"
           >
-            Visit Trading Post →
-          </a>
+            View Assignments →
+          </Link>
         </Card>
 
         <Card
-          title="Map Room"
-          icon="📍"
-          iconImage="/images/dashboard/map-room.png"
-        >
-          <p className="mb-4 text-vintage-text">
-            Your Second Brain for capturing and retrieving knowledge with
-            semantic search. Never lose track of important information again.
-          </p>
-          <a
-            href="/map-room"
-            className="text-terracotta hover:text-terracotta-dark font-ui uppercase text-sm"
-          >
-            Enter Map Room →
-          </a>
-        </Card>
-
-        <Card
-          title="Outpost"
+          title="Base Camp"
           icon="⛺"
-          iconImage="/images/dashboard/outpost.png"
+          iconImage="/images/dashboard/base-camp.png"
         >
           <p className="mb-4 text-vintage-text">
-            Access integrated terminal, Git tools, and system monitoring.
-            Your command center for developer operations.
+            Your daily planning hub. Review wellness sessions, track your progress,
+            and plan your next expedition.
           </p>
-          <a
-            href="/outpost"
+          <Link
+            to="/base-camp"
             className="text-terracotta hover:text-terracotta-dark font-ui uppercase text-sm"
           >
-            Open Outpost →
-          </a>
+            Enter Base Camp →
+          </Link>
+        </Card>
+
+        <Card
+          title="Outbound Passage"
+          icon="🧭"
+          iconImage="/images/dashboard/calendar.png"
+        >
+          <p className="mb-4 text-vintage-text">
+            View your weekly calendar at a glance. See today's meetings and
+            plan your journey through the week ahead.
+          </p>
+          <Link
+            to="/outbound-passage"
+            className="text-terracotta hover:text-terracotta-dark font-ui uppercase text-sm"
+          >
+            Chart Your Course →
+          </Link>
         </Card>
       </div>
     </div>
