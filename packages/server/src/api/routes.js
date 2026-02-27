@@ -894,23 +894,25 @@ router.post('/wellness/oauth/callback', async (req, res) => {
   }
 });
 
-// On-demand wellness meeting triggers
+// Manual wellness meeting triggers (bypass "already delivered" check)
 router.post('/wellness/standup/trigger', async (req, res) => {
   try {
-    const result = await wellnessMeetings.triggerStandupOnDemand();
+    // Manual trigger always creates new standup (bypasses "already delivered" check)
+    const result = await wellnessMeetings.triggerManualStandup();
     res.json(result);
   } catch (error) {
-    logger.error('Error triggering on-demand standup', error);
+    logger.error('Error triggering manual standup', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 router.post('/wellness/retro/trigger', async (req, res) => {
   try {
-    const result = await wellnessMeetings.triggerRetroOnDemand();
+    // Manual trigger always creates new retro (bypasses "already delivered" check)
+    const result = await wellnessMeetings.triggerManualRetro();
     res.json(result);
   } catch (error) {
-    logger.error('Error triggering on-demand retro', error);
+    logger.error('Error triggering manual retro', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
