@@ -22,16 +22,16 @@ const Dashboard = () => {
       if (wellnessResponse?.ok) {
         const wellnessData = await wellnessResponse.json();
 
-        // Try Oura readiness score first
-        if (wellnessData.metrics?.readiness?.score) {
-          setWellnessScore(wellnessData.metrics.readiness.score);
+        // Try Oura readiness score first (nested under metrics.metrics)
+        if (wellnessData.metrics?.metrics?.readiness?.score) {
+          setWellnessScore(wellnessData.metrics.metrics.readiness.score);
           setWellnessSource('oura');
         }
         // Fallback to self-reported score from morning standup
         else if (wellnessData.metrics?.sessions) {
-          const todayStandups = wellnessData.metrics.sessions.filter(s => s.type === 'standup');
+          const todayStandups = wellnessData.metrics.sessions.filter(s => s.type === 'standup' && s.status === 'completed');
           if (todayStandups.length > 0) {
-            // Get most recent standup
+            // Get most recent completed standup
             const latestStandup = todayStandups[todayStandups.length - 1];
             // Look for self-reported readiness score in conversation
             const readinessMsg = latestStandup.conversation?.find(msg =>
