@@ -12,6 +12,7 @@ const Outpost = lazy(() => import('./pages/Outpost'));
 const Jira = lazy(() => import('./pages/Jira'));
 const Medic = lazy(() => import('./pages/Medic'));
 const BaseCamp = lazy(() => import('./pages/BaseCamp'));
+const OutboundPassage = lazy(() => import('./pages/OutboundPassage'));
 const Settings = lazy(() => import('./pages/Settings'));
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
               <Route path="jira" element={<Jira />} />
               <Route path="medic" element={<Medic />} />
               <Route path="base-camp" element={<BaseCamp />} />
+              <Route path="outbound-passage" element={<OutboundPassage />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

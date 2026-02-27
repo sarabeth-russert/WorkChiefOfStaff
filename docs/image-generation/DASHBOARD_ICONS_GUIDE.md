@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide provides prompts for generating vintage-style icon illustrations for the Adventureland Chief of Staff dashboard landing page. These icons will replace the emoji icons currently used in both the Quick Stats and Feature Cards sections.
+This guide provides prompts for generating vintage-style icon illustrations for the Adventureland Chief of Staff dashboard landing page. These icons will replace the emoji icons currently used in both the Quick Stats metric cards and Feature Cards sections.
 
 ---
 
@@ -23,52 +23,58 @@ This guide provides prompts for generating vintage-style icon illustrations for 
 
 ---
 
-## Quick Stats Icons (3 Icons)
+## Quick Stats Metric Card Icons (3 Icons)
 
-### 1. Active Agents Icon (`active-agents.png`)
+### 1. Wellness Icon (`wellness.png`)
 
-**Purpose**: Represents the AI agent team roster
+**Purpose**: Represents daily wellness and readiness score from Oura Ring
+**Current Emoji**: 💪
+**Links to**: /medic
 
 **Prompt**:
 ```
-Create a vintage 1950s adventure-themed icon showing a group of explorers in silhouette or simplified form, arranged in a circular formation looking at a glowing map or compass in the center. Vintage Disney Adventureland poster style with warm earth tones (terracotta, jungle green, mustard yellow). Flat illustration, hand-drawn aesthetic, retro poster art. The icon should convey teamwork and exploration. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) vintage badge or emblem design.
+Create a vintage 1950s-60s icon showing a stylized heart with radiating wellness symbols like leaves, water droplets, or energy rays around it. Vintage Disney Adventureland poster style with warm earth tones (jungle green, teal, sunset orange, cream). The icon should convey health, vitality, and readiness. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) wellness emblem with a tropical/nature theme.
 ```
 
 **Alternative Prompt** (Simpler):
 ```
-Vintage 1950s adventure-themed icon of a compass rose with small explorer silhouettes at the cardinal points. Warm earth tones (terracotta #D4735E, jungle green #4A7859, sunset orange #E87144). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Society of Explorers and Adventurers aesthetic.
+Vintage 1950s icon of a strong, healthy tree with full foliage and roots. Warm earth tones (jungle green #4A7859, teal #479B99, cream #FFF8E7). Symbolizes wellness and vitality. Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Nature-inspired wellness emblem for Disney Adventureland aesthetic.
 ```
 
 ---
 
-### 2. Managed Apps Icon (`managed-apps.png`)
+### 2. Calendar Icon (`calendar.png`)
 
-**Purpose**: Represents local development applications and PM2 management
+**Purpose**: Represents today's Outlook calendar meetings
+**Current Emoji**: 📅
+**Links to**: /outbound-passage
 
 **Prompt**:
 ```
-Create a vintage 1950s-60s icon showing cargo crates, shipping boxes, and trade goods stacked together, viewed from a slight angle. Vintage Disney Adventureland poster style with warm earth tones (mustard yellow, terracotta, cream, jungle green). The crates should have travel stamps and expedition labels. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) trading post emblem.
+Create a vintage 1950s-60s icon showing an antique calendar or daily planner with a compass rose in the corner and expedition markings on specific dates. Vintage Disney Adventureland poster style with warm earth tones (terracotta, mustard, cream, burgundy). Include decorative elements like corner ribbons and vintage date stamps. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) journey planning emblem.
 ```
 
 **Alternative Prompt** (Simpler):
 ```
-Vintage 1950s icon of stacked wooden cargo crates with rope and vintage shipping labels. Warm earth tones (mustard #DAA520, terracotta #D4735E, cream #FFF8E7). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Trading post aesthetic inspired by Disney's Society of Explorers.
+Vintage 1950s icon of a stylized calendar page with a compass rose overlaid on it. Warm earth tones (terracotta #D4735E, mustard #DAA520, cream #FFF8E7). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Journey planning aesthetic inspired by Disney's Society of Explorers.
 ```
 
 ---
 
-### 3. Knowledge Items Icon (`knowledge-items.png`)
+### 3. Assignments Icon (`assignments.png`)
 
-**Purpose**: Represents stored knowledge and second brain entries
+**Purpose**: Represents active Jira tickets/assignments
+**Current Emoji**: 📋
+**Links to**: /jira (Field Assignments)
 
 **Prompt**:
 ```
-Create a vintage 1950s-60s icon showing an antique map or scroll partially unfurled with a magnifying glass over it, revealing hidden details. Vintage Disney Adventureland poster style with warm earth tones (teal, burgundy, cream, mustard). The map should have decorative compass roses and cartography details. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) cartography emblem.
+Create a vintage 1950s-60s icon showing a mission briefing document or field report on a clipboard with official stamps and checkmarks. Vintage Disney Adventureland poster style with warm earth tones (sunset orange, jungle green, cream, terracotta). Include decorative elements like expedition insignia and priority markers. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) mission briefing emblem.
 ```
 
 **Alternative Prompt** (Simpler):
 ```
-Vintage 1950s icon of an old treasure map with compass rose and magnifying glass. Warm earth tones (teal #479B99, burgundy #8B3A3A, cream #FFF8E7, mustard #DAA520). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Map room aesthetic inspired by Disney's Society of Explorers.
+Vintage 1950s icon of a clipboard with a checklist and explorer's stamp. Warm earth tones (sunset orange #E87144, jungle green #4A7859, cream #FFF8E7). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Mission briefing aesthetic inspired by Disney Adventureland.
 ```
 
 ---
@@ -77,7 +83,9 @@ Vintage 1950s icon of an old treasure map with compass rose and magnifying glass
 
 ### 4. Expedition Icon (`expedition.png`)
 
-**Purpose**: Represents AI agent orchestration and the Expedition page
+**Purpose**: Represents AI agent orchestration and chat with Guide agents
+**Current Emoji**: 🗺️
+**Links to**: /expedition
 
 **Prompt**:
 ```
@@ -91,51 +99,41 @@ Vintage 1950s icon featuring a large compass with crossed binoculars behind it. 
 
 ---
 
-### 5. Trading Post Icon (`trading-post.png`)
+### 5. Field Assignments Icon (REUSES `assignments.png`)
 
-**Purpose**: Represents application management and the Trading Post page
+**Purpose**: Feature card link to Jira Kanban board
+**Current Emoji**: 📋
+**Links to**: /jira
+
+**Note**: This feature card reuses the same `assignments.png` icon from the Quick Stats section above. No additional icon generation needed.
+
+---
+
+### 6. Base Camp Icon (`base-camp.png`)
+
+**Purpose**: Represents daily planning hub and wellness session history
+**Current Emoji**: ⛺
+**Links to**: /base-camp
 
 **Prompt**:
 ```
-Create a vintage 1950s-60s icon showing a trading post storefront or marketplace stall with cargo crates, barrels, and trade goods. Vintage Disney Adventureland poster style with warm earth tones (mustard yellow, terracotta, jungle green, sunset orange). Include decorative elements like a canopy awning and vintage signage. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) trading post emblem.
+Create a vintage 1950s-60s icon showing an expedition camp with a large safari tent, campfire with smoke curling upward, and explorer's equipment arranged around it. Vintage Disney Adventureland poster style with warm earth tones (sunset orange, jungle green, terracotta, cream). Include decorative elements like a pennant flag on the tent, lanterns, and supply crates. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) base camp emblem.
 ```
 
 **Alternative Prompt** (Simpler):
 ```
-Vintage 1950s icon of cargo crates and trade goods with a vintage scale or balance in the center. Warm earth tones (mustard #DAA520, terracotta #D4735E, jungle green #4A7859). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Trading post emblem inspired by Disney Adventureland.
+Vintage 1950s icon of a safari-style expedition tent with a campfire in front. Warm earth tones (sunset orange #E87144, jungle green #4A7859, terracotta #D4735E, cream #FFF8E7). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Base camp emblem inspired by Disney Adventureland.
 ```
 
 ---
 
-### 6. Map Room Icon (`map-room.png`)
+### 7. Outbound Passage Icon (REUSES `calendar.png`)
 
-**Purpose**: Represents knowledge management and the Map Room page
+**Purpose**: Feature card link to weekly calendar view
+**Current Emoji**: 🧭
+**Links to**: /outbound-passage
 
-**Prompt**:
-```
-Create a vintage 1950s-60s icon showing an antique globe on a wooden stand with maps and scrolls around it, viewed in a scholarly setting. Vintage Disney Adventureland poster style with warm earth tones (teal, burgundy, mustard, cream). Include decorative elements like rolled scrolls, compass roses, and cartography tools. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) cartography emblem.
-```
-
-**Alternative Prompt** (Simpler):
-```
-Vintage 1950s icon of an antique globe with crossed scrolls or maps behind it. Warm earth tones (teal #479B99, burgundy #8B3A3A, cream #FFF8E7, mustard #DAA520). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Map room emblem inspired by Disney's Society of Explorers.
-```
-
----
-
-### 7. Outpost Icon (`outpost.png`)
-
-**Purpose**: Represents developer tools and the Outpost page
-
-**Prompt**:
-```
-Create a vintage 1950s-60s icon showing an expedition camp with a tent, campfire, and equipment like lanterns and tools arranged around it. Vintage Disney Adventureland poster style with warm earth tones (sunset orange, jungle green, terracotta, cream). Include decorative elements like a flag on the tent and explorer's gear. Flat illustration, hand-drawn aesthetic, retro poster art. Square format 512x512px with transparent background. Style: SEA (Society of Explorers and Adventurers) outpost emblem.
-```
-
-**Alternative Prompt** (Simpler):
-```
-Vintage 1950s icon of an expedition tent with crossed tools (shovel and pickaxe) behind it. Warm earth tones (sunset orange #E87144, jungle green #4A7859, terracotta #D4735E). Retro illustrated style, hand-drawn appearance, flat colors. Square 512x512px, transparent background. Outpost emblem inspired by Disney Adventureland.
-```
+**Note**: This feature card reuses the same `calendar.png` icon from the Quick Stats section above. No additional icon generation needed.
 
 ---
 
@@ -168,46 +166,46 @@ Vintage 1950s icon of an expedition tent with crossed tools (shovel and pickaxe)
 
 Save all generated icons in `/packages/client/public/images/dashboard/` with these exact names:
 
-**Quick Stats Icons:**
-- `active-agents.png`
-- `managed-apps.png`
-- `knowledge-items.png`
+**Quick Stats Metric Card Icons (3 unique icons needed):**
+- `wellness.png` - Wellness/readiness score
+- `calendar.png` - Today's meetings (also reused by Outbound Passage feature card)
+- `assignments.png` - Active assignments (also reused by Field Assignments feature card)
 
-**Feature Card Icons:**
-- `expedition.png`
-- `trading-post.png`
-- `map-room.png`
-- `outpost.png`
+**Feature Card Icons (2 additional unique icons needed):**
+- `expedition.png` - Expedition/AI agent chat
+- `base-camp.png` - Base Camp/daily planning hub
+
+**Total**: 5 unique icons to generate (2 are reused across multiple cards)
 
 ---
 
 ## After Generation
 
-Once you've generated all 7 icons:
+Once you've generated all 5 unique icons:
 
 1. **Save to directory**: Place all PNG files in `/packages/client/public/images/dashboard/`
 2. **Verify images**: Ensure all are 512x512px with transparent backgrounds
-3. **Test in UI**: The Card component will automatically display them with fallback to emoji
+3. **Test in UI**: The Dashboard will automatically display them with fallback to emoji
 4. **Optimize** (optional): Use TinyPNG to reduce file sizes while maintaining quality
 
 ---
 
 ## Implementation
 
-The images will be automatically integrated into the Dashboard when they're present in the directory. The Card component has been updated to support both image icons and emoji fallbacks, ensuring the UI works perfectly whether images are loaded or not.
+The images will be automatically integrated into the Dashboard when they're present in the directory. The Dashboard component has fallback logic to show emoji if images fail to load.
 
-**Image paths in code:**
+**Image paths currently in Dashboard.jsx:**
 ```javascript
-// Quick Stats
-iconImage="/images/dashboard/active-agents.png"
-iconImage="/images/dashboard/managed-apps.png"
-iconImage="/images/dashboard/knowledge-items.png"
+// Quick Stats Metric Cards
+iconImage="/images/dashboard/wellness.png"      // Wellness Score → /medic
+iconImage="/images/dashboard/calendar.png"      // Today's Meetings → /outbound-passage
+iconImage="/images/dashboard/assignments.png"   // Active Assignments → /jira
 
 // Feature Cards
-iconImage="/images/dashboard/expedition.png"
-iconImage="/images/dashboard/trading-post.png"
-iconImage="/images/dashboard/map-room.png"
-iconImage="/images/dashboard/outpost.png"
+iconImage="/images/dashboard/expedition.png"    // Expedition → /expedition
+iconImage="/images/dashboard/assignments.png"   // Field Assignments → /jira (REUSED)
+iconImage="/images/dashboard/base-camp.png"     // Base Camp → /base-camp
+iconImage="/images/dashboard/calendar.png"      // Outbound Passage → /outbound-passage (REUSED)
 ```
 
 ---

@@ -113,11 +113,11 @@ async function initializeServer() {
       wellnessScheduler.registerCallbacks({
         onStandup: async () => {
           logger.info('Wellness scheduler: Triggering standup meeting');
-          await wellnessMeetings.triggerStandupMeeting();
+          await wellnessMeetings.triggerStandupOnDemand();
         },
         onRetro: async () => {
           logger.info('Wellness scheduler: Triggering retro meeting');
-          await wellnessMeetings.triggerRetroMeeting();
+          await wellnessMeetings.triggerRetroOnDemand();
         },
         onStressCheck: async (threshold) => {
           logger.info('Wellness scheduler: Checking stress levels', { threshold });
