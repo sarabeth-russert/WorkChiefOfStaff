@@ -33,7 +33,7 @@ const Dashboard = () => {
       }
 
       // Fetch active Jira tickets
-      const jiraResponse = await fetch(`${apiUrl}/api/jira/issues/CONTECH?myIssuesOnly=true`).catch(() => null);
+      const jiraResponse = await fetch(`${apiUrl}/api/jira/projects/CONTECH/issues?myIssuesOnly=true`).catch(() => null);
       if (jiraResponse?.ok) {
         const jiraData = await jiraResponse.json();
         const inProgress = jiraData.issues?.filter(issue =>
