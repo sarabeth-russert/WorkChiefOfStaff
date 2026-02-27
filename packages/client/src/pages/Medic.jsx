@@ -106,6 +106,26 @@ const Medic = () => {
     setIsRefreshing(false);
   };
 
+  const handleTriggerStandup = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/wellness/standup/trigger`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+
+      if (result.success && !result.alreadyDelivered) {
+        alert('Morning standup triggered! Check your notifications.');
+      } else if (result.alreadyDelivered) {
+        alert('Morning standup already delivered today.');
+      } else {
+        alert('Failed to trigger standup: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error triggering standup:', err);
+      alert('Error triggering standup: ' + err.message);
+    }
+  };
+
   const handleTriggerRetro = async () => {
     try {
       const response = await fetch(`${apiUrl}/api/wellness/retro/trigger`, {
@@ -221,6 +241,13 @@ const Medic = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-poster text-vintage-text">Today's Metrics</h2>
             <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTriggerStandup}
+              >
+                🌅 Start Day
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
