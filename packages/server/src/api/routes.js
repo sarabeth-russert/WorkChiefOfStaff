@@ -19,11 +19,20 @@ async function detectAndScheduleNotification(message) {
   let modifiedMessage = message;
 
   // Pattern 0: Multiple times in one request
-  // "schedule notifications for 8am, 9am, and 10am" or "remind me at 8am, 9am, and 10am to X"
-  const multiTimeMatch = message.match(/(?:remind me|schedule (?:some )?(?:notifications?|reminders?))(?: to (.+?))? (?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)/i);
+  // "schedule notifications for 8am, 9am, and 10am to X" or "remind me to X at 8am, 9am, and 10am"
+  let multiTimeMatch = message.match(/(?:remind me to|schedule (?:some )?(?:notifications?|reminders?)(?: to)?)\s+(.+?)\s+(?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)/i);
+
+  // Also try pattern: "schedule notifications for [times] to [message]"
+  if (!multiTimeMatch) {
+    multiTimeMatch = message.match(/(?:schedule (?:some )?(?:notifications?|reminders?)|remind me)\s+(?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)\s+(?:to|for)\s+(.+)/i);
+    if (multiTimeMatch) {
+      // Swap order - times are in [1], message is in [2]
+      multiTimeMatch = [multiTimeMatch[0], multiTimeMatch[2], multiTimeMatch[1]];
+    }
+  }
 
   if (multiTimeMatch) {
-    const reminderMessage = multiTimeMatch[1] || 'reminder';
+    const reminderMessage = multiTimeMatch[1]?.trim() || 'reminder';
     const timesStr = multiTimeMatch[2];
 
     try {
