@@ -10,7 +10,7 @@ const Navigation = () => {
     { path: '/trading-post', label: 'Trading Post' },
     { path: '/map-room', label: 'Map Room' },
     { path: '/outpost', label: 'Outpost' },
-    { path: '/jira', label: 'Jira' },
+    { path: '/jira', label: 'Field Assignments' },
     { path: '/medic', label: 'Medic' },
     { path: '/base-camp', label: 'Base Camp' },
     { path: '/outbound-passage', label: 'Outbound Passage' },
