@@ -88,6 +88,10 @@ setupSocketHandlers(io);
 // Initialize wellness meetings with Socket.IO
 wellnessMeetings.setIO(io);
 
+// Initialize notification scheduler with Socket.IO
+const notificationScheduler = (await import('./wellness/NotificationScheduler.js')).default;
+notificationScheduler.setIO(io);
+
 // Initialize configuration system
 async function initializeServer() {
   try {
@@ -131,6 +135,9 @@ async function initializeServer() {
       // Start wellness scheduler
       await wellnessScheduler.start();
       logger.info('Wellness scheduler started successfully');
+
+      // Restore scheduled notifications
+      await notificationScheduler.restoreScheduledJobs();
     } else {
       logger.info('Oura Ring not configured, wellness scheduler disabled');
     }

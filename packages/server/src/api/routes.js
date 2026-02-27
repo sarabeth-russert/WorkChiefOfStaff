@@ -714,6 +714,69 @@ router.post('/wellness/sync', async (req, res) => {
   }
 });
 
+// Notification scheduler endpoints
+const notificationScheduler = (await import('../wellness/NotificationScheduler.js')).default;
+
+router.post('/wellness/notifications/schedule', async (req, res) => {
+  try {
+    const { message, expression, fromTime, untilTime } = req.body;
+
+    if (!message) {
+      return res.status(400).json({ success: false, error: 'Message is required' });
+    }
+
+    // Parse the time expression
+    let notification;
+
+    if (expression) {
+      // Recurring notification
+      const cronExpression = notificationScheduler.parseToCron(expression);
+      const timeRange = notificationScheduler.parseTimeRange(fromTime, untilTime);
+
+      notification = await notificationScheduler.scheduleNotification({
+        message,
+        type: 'recurring',
+        cronExpression,
+        endTime: timeRange.until ? new Date().setHours(timeRange.until.hour, timeRange.until.minute, 0, 0) : null
+      });
+    } else {
+      // One-time notification
+      const targetTime = new Date(req.body.time);
+      notification = await notificationScheduler.scheduleNotification({
+        message,
+        type: 'one-time',
+        time: targetTime
+      });
+    }
+
+    res.json({ success: true, notification });
+  } catch (error) {
+    logger.error('Error scheduling notification', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/wellness/notifications', async (req, res) => {
+  try {
+    const notifications = await notificationScheduler.getActiveNotifications();
+    res.json({ success: true, notifications });
+  } catch (error) {
+    logger.error('Error getting notifications', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/wellness/notifications/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await notificationScheduler.cancelNotification(id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error cancelling notification', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Check if standup/retro delivered today
 router.get('/wellness/standup/status', async (req, res) => {
   try {
@@ -840,6 +903,58 @@ router.post('/wellness/session/message', async (req, res) => {
     // Build task for Guide agent
     let task = message;
     const history = conversationHistory || [];
+
+    // Check if user is requesting a notification to be scheduled
+    let scheduledNotification = null;
+    const scheduleMatch = message.match(/remind\s+me\s+to\s+(.+?)\s+(?:every|once)\s+(.+?)(?:\s+(?:from|starting)\s+(.+?))?(?:\s+(?:until|to)\s+(.+?))?$/i);
+
+    if (scheduleMatch) {
+      const [, reminderMessage, frequency, fromTime, untilTime] = scheduleMatch;
+
+      try {
+        // Parse the frequency expression
+        const cronExpression = notificationScheduler.parseToCron(frequency);
+
+        // Parse time range if provided
+        let endTime = null;
+        if (untilTime) {
+          const timeRange = notificationScheduler.parseTimeRange(fromTime, untilTime);
+          if (timeRange.until) {
+            const now = new Date();
+            endTime = new Date();
+            endTime.setHours(timeRange.until.hour, timeRange.until.minute || 0, 0, 0);
+
+            // If the end time is in the past, set it for today
+            if (endTime < now) {
+              endTime.setDate(endTime.getDate() + 1);
+            }
+          }
+        }
+
+        // Schedule the notification
+        scheduledNotification = await notificationScheduler.scheduleNotification({
+          message: reminderMessage.trim(),
+          type: 'recurring',
+          cronExpression,
+          endTime
+        });
+
+        logger.info('[WellnessSession] Scheduled notification from user request', {
+          notificationId: scheduledNotification.id,
+          message: reminderMessage,
+          frequency
+        });
+
+        // Add context for Guide so they know the reminder was scheduled
+        task = `${message}
+
+[System Note: I've scheduled a reminder for "${reminderMessage}" ${frequency}${untilTime ? ` until ${untilTime}` : ''}. Please confirm this to the user in a friendly way.]`;
+      } catch (error) {
+        logger.error('[WellnessSession] Error scheduling notification', {
+          error: error.message
+        });
+      }
+    }
 
     // If this is a standup awaiting scores, provide enhanced context
     if (session?.awaitingScores && session?.type === 'standup') {

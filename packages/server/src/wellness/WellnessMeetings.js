@@ -254,6 +254,7 @@ class WellnessMeetings {
       logger.info('[WellnessMeetings] Starting standup meeting');
 
       const today = this.getTodayDate();
+      const yesterday = this.getYesterdayDate();
 
       // Mark standup as delivered
       await wellnessDataStore.saveDailyMetrics(today, {
@@ -261,11 +262,44 @@ class WellnessMeetings {
         standupDeliveredAt: new Date().toISOString()
       });
 
+      // Get yesterday's notes for today
+      let yesterdayNotes = null;
+      try {
+        const yesterdayMetrics = await wellnessDataStore.getDailyMetrics(yesterday);
+        if (yesterdayMetrics && yesterdayMetrics.sessions) {
+          // Find the most recent completed retro with notes
+          const retrosWithNotes = yesterdayMetrics.sessions.filter(
+            s => s.type === 'retro' && s.status === 'completed' && s.summary && s.summary.notesForTomorrow
+          );
+
+          if (retrosWithNotes.length > 0) {
+            const lastRetro = retrosWithNotes[retrosWithNotes.length - 1];
+            yesterdayNotes = lastRetro.summary.notesForTomorrow;
+            logger.info('[WellnessMeetings] Retrieved yesterday\'s notes for tomorrow', {
+              notesLength: yesterdayNotes.length
+            });
+          }
+        }
+      } catch (error) {
+        logger.warn('[WellnessMeetings] Could not retrieve yesterday\'s notes', { error: error.message });
+      }
+
       // Create initial prompt asking user for their scores
-      const initialPrompt = `Good morning! 🌅
+      let initialPrompt = `Good morning! 🌅
 
 Since Oura Ring readiness data takes 24 hours to sync, let's start with what you're seeing in your Oura app right now.
+`;
 
+      // Add yesterday's notes if available
+      if (yesterdayNotes) {
+        initialPrompt += `
+**Quick Reminder from Yesterday Evening:**
+${yesterdayNotes}
+
+`;
+      }
+
+      initialPrompt += `
 **Please share your scores from today:**
 - What's your **Sleep Score**? (0-100)
 - What's your **Readiness Score**? (0-100)
