@@ -2,6 +2,12 @@ import logger from '../config/logger.js';
 import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * WellnessMeetings manages wellness check-ins and meetings
@@ -21,12 +27,34 @@ class WellnessMeetings {
   }
 
   /**
+   * Load wellness settings from file
+   */
+  async loadSettings() {
+    try {
+      const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+      const data = await fs.readFile(settingsPath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      logger.warn('[WellnessMeetings] Could not load settings, using defaults', { error: error.message });
+      return { timezone: 'America/Los_Angeles' };
+    }
+  }
+
+  /**
    * Get today's date in YYYY-MM-DD format using configured timezone
    */
   getTodayDate() {
     try {
-      const settings = wellnessDataStore.getSettings();
-      const timezone = settings?.timezone || 'America/Los_Angeles';
+      // Load settings synchronously (cached after first load)
+      let timezone = 'America/Los_Angeles';
+      try {
+        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+        const data = require('fs').readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(data);
+        timezone = settings.timezone || timezone;
+      } catch (e) {
+        // Use default timezone if settings can't be loaded
+      }
 
       // Use Intl.DateTimeFormat for reliable timezone conversion
       const formatter = new Intl.DateTimeFormat('en-US', {
@@ -57,8 +85,17 @@ class WellnessMeetings {
    */
   getYesterdayDate() {
     try {
-      const settings = wellnessDataStore.getSettings();
-      const timezone = settings?.timezone || 'America/Los_Angeles';
+      // Load settings synchronously (cached after first load)
+      let timezone = 'America/Los_Angeles';
+      try {
+        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+        const data = require('fs').readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(data);
+        timezone = settings.timezone || timezone;
+      } catch (e) {
+        // Use default timezone if settings can't be loaded
+      }
+
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
 
@@ -384,28 +421,42 @@ Once you share these, I can provide personalized guidance for your day!`;
 
       // Get morning standup session to include morning plan context
       let morningPlan = null;
-      let standupSession = null;
       try {
-        standupSession = await wellnessDataStore.getActiveSession(today, 'standup');
-        if (!standupSession) {
-          // Also check completed standup sessions from today
-          const dailyMetrics = await wellnessDataStore.getDailyMetrics(today);
-          if (dailyMetrics && dailyMetrics.sessions) {
-            standupSession = dailyMetrics.sessions.find(s => s.type === 'standup');
-          }
-        }
+        // Get today's daily metrics to search all standup sessions
+        const dailyMetrics = await wellnessDataStore.getDailyMetrics(today);
+        logger.info('[WellnessMeetings] Retrieved daily metrics for standup search', {
+          hasSessions: !!dailyMetrics?.sessions,
+          sessionCount: dailyMetrics?.sessions?.length || 0
+        });
 
-        if (standupSession && standupSession.conversation) {
-          // Extract morning plan from standup conversation
-          const planMessage = standupSession.conversation.find(msg =>
-            msg.role === 'user' && msg.content && msg.content.toLowerCase().includes('plan')
+        if (dailyMetrics && dailyMetrics.sessions) {
+          // Find the most recent standup with a plan (prioritize completed)
+          const standupsWithPlan = dailyMetrics.sessions.filter(
+            s => s.type === 'standup' && s.summary && s.summary.plan
           );
-          if (planMessage) {
-            morningPlan = planMessage.content;
+
+          logger.info('[WellnessMeetings] Filtered standups with plans', {
+            count: standupsWithPlan.length
+          });
+
+          if (standupsWithPlan.length > 0) {
+            // Get the last (most recent) standup with a plan
+            const standupSession = standupsWithPlan[standupsWithPlan.length - 1];
+            morningPlan = standupSession.summary.plan;
+
+            logger.info('[WellnessMeetings] Retrieved morning plan from standup', {
+              sessionId: standupSession.id,
+              planLength: morningPlan.length
+            });
+          } else {
+            logger.info('[WellnessMeetings] No standup with plan found today');
           }
         }
       } catch (error) {
-        logger.warn('[WellnessMeetings] Could not retrieve morning standup session', { error: error.message });
+        logger.warn('[WellnessMeetings] Could not retrieve morning standup session', {
+          error: error.message,
+          stack: error.stack
+        });
       }
 
       // Save to data store with retroDelivered flag
