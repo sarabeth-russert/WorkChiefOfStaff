@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
   const [wellnessScore, setWellnessScore] = useState(null);
+  const [wellnessSource, setWellnessSource] = useState(null); // 'oura' or 'self-reported'
   const [todayEvents, setTodayEvents] = useState(null);
   const [activeTickets, setActiveTickets] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,8 +21,30 @@ const Dashboard = () => {
       const wellnessResponse = await fetch(`${apiUrl}/api/wellness/daily`).catch(() => null);
       if (wellnessResponse?.ok) {
         const wellnessData = await wellnessResponse.json();
+
+        // Try Oura readiness score first
         if (wellnessData.metrics?.readiness?.score) {
           setWellnessScore(wellnessData.metrics.readiness.score);
+          setWellnessSource('oura');
+        }
+        // Fallback to self-reported score from morning standup
+        else if (wellnessData.metrics?.sessions) {
+          const todayStandups = wellnessData.metrics.sessions.filter(s => s.type === 'standup');
+          if (todayStandups.length > 0) {
+            // Get most recent standup
+            const latestStandup = todayStandups[todayStandups.length - 1];
+            // Look for self-reported readiness score in conversation
+            const readinessMsg = latestStandup.conversation?.find(msg =>
+              msg.role === 'user' && /readiness[:\s]+(\d+)/i.test(msg.content)
+            );
+            if (readinessMsg) {
+              const match = readinessMsg.content.match(/readiness[:\s]+(\d+)/i);
+              if (match) {
+                setWellnessScore(parseInt(match[1]));
+                setWellnessSource('self-reported');
+              }
+            }
+          }
         }
       }
 
@@ -84,8 +107,13 @@ const Dashboard = () => {
             <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
               Wellness Score
             </p>
+            {wellnessScore !== null && wellnessSource && !loading && (
+              <p className="text-xs text-vintage-text opacity-50 mt-2">
+                {wellnessSource === 'oura' ? 'From Oura' : 'Self-reported'}
+              </p>
+            )}
             {wellnessScore === null && !loading && (
-              <p className="text-xs text-vintage-text opacity-50 mt-2">Not connected</p>
+              <p className="text-xs text-vintage-text opacity-50 mt-2">Not available</p>
             )}
           </Card>
         </Link>
