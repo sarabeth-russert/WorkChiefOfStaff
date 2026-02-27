@@ -183,8 +183,10 @@ class WellnessMeetings {
   async hasStandupBeenDeliveredToday() {
     try {
       const today = this.getTodayDate();
-      const metrics = await wellnessDataStore.getDailyMetrics(today);
-      return metrics && metrics.standupDelivered === true;
+      const data = await wellnessDataStore.getDailyMetrics(today);
+      // Check both root level and nested in metrics for backwards compatibility
+      return (data && data.standupDelivered === true) ||
+             (data && data.metrics && data.metrics.standupDelivered === true);
     } catch (error) {
       logger.error('[WellnessMeetings] Error checking standup delivery status', { error: error.message });
       return false;
@@ -197,8 +199,10 @@ class WellnessMeetings {
   async hasRetroBeenDeliveredToday() {
     try {
       const today = this.getTodayDate();
-      const metrics = await wellnessDataStore.getDailyMetrics(today);
-      return metrics && metrics.retroDelivered === true;
+      const data = await wellnessDataStore.getDailyMetrics(today);
+      // Check both root level and nested in metrics for backwards compatibility
+      return (data && data.retroDelivered === true) ||
+             (data && data.metrics && data.metrics.retroDelivered === true);
     } catch (error) {
       logger.error('[WellnessMeetings] Error checking retro delivery status', { error: error.message });
       return false;
