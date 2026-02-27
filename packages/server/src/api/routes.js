@@ -5,6 +5,151 @@ import notificationScheduler from '../wellness/NotificationScheduler.js';
 
 const router = express.Router();
 
+/**
+ * Helper function to detect and schedule notifications from user messages
+ * Supports patterns like:
+ * - "remind me to [message] at [time]"
+ * - "remind me to [message] every [frequency]"
+ * - "schedule a notification to [message] at [time]"
+ */
+async function detectAndScheduleNotification(message) {
+  let scheduledNotification = null;
+  let modifiedMessage = message;
+
+  // Pattern 1: One-time notification at specific time
+  // "remind me to [message] at [time]"
+  const oneTimeMatch = message.match(/(?:remind me to|schedule (?:a )?(?:notification|reminder) to)\s+(.+?)\s+at\s+(.+?)(?:\s+today)?$/i);
+
+  if (oneTimeMatch) {
+    const [, reminderMessage, timeStr] = oneTimeMatch;
+
+    try {
+      // Parse the time string (e.g., "8am", "3:30pm", "noon")
+      const time = parseTimeString(timeStr);
+
+      if (time) {
+        scheduledNotification = await notificationScheduler.scheduleNotification({
+          message: reminderMessage.trim(),
+          type: 'one-time',
+          time: time
+        });
+
+        logger.info('[NotificationHelper] Scheduled one-time notification', {
+          notificationId: scheduledNotification.id,
+          message: reminderMessage,
+          time: time.toISOString()
+        });
+
+        modifiedMessage = `${message}
+
+[System Note: I've scheduled a one-time notification for "${reminderMessage}" at ${timeStr}. Please confirm this to the user in a friendly way.]`;
+      }
+    } catch (error) {
+      logger.error('[NotificationHelper] Error scheduling one-time notification', {
+        error: error.message
+      });
+    }
+  }
+
+  // Pattern 2: Recurring notification
+  // "remind me to [message] every [frequency]"
+  if (!scheduledNotification) {
+    const recurringMatch = message.match(/remind\s+me\s+to\s+(.+?)\s+(?:every|once)\s+(.+?)(?:\s+(?:from|starting)\s+(.+?))?(?:\s+(?:until|to)\s+(.+?))?$/i);
+
+    if (recurringMatch) {
+      const [, reminderMessage, frequency, fromTime, untilTime] = recurringMatch;
+
+      try {
+        const cronExpression = notificationScheduler.parseToCron(frequency);
+
+        let endTime = null;
+        if (untilTime) {
+          const timeRange = notificationScheduler.parseTimeRange(fromTime, untilTime);
+          if (timeRange.until) {
+            const now = new Date();
+            endTime = new Date();
+            endTime.setHours(timeRange.until.hour, timeRange.until.minute || 0, 0, 0);
+
+            if (endTime < now) {
+              endTime.setDate(endTime.getDate() + 1);
+            }
+          }
+        }
+
+        scheduledNotification = await notificationScheduler.scheduleNotification({
+          message: reminderMessage.trim(),
+          type: 'recurring',
+          cronExpression,
+          endTime
+        });
+
+        logger.info('[NotificationHelper] Scheduled recurring notification', {
+          notificationId: scheduledNotification.id,
+          message: reminderMessage,
+          frequency
+        });
+
+        modifiedMessage = `${message}
+
+[System Note: I've scheduled a recurring reminder for "${reminderMessage}" ${frequency}${untilTime ? ` until ${untilTime}` : ''}. Please confirm this to the user in a friendly way.]`;
+      } catch (error) {
+        logger.error('[NotificationHelper] Error scheduling recurring notification', {
+          error: error.message
+        });
+      }
+    }
+  }
+
+  return { scheduledNotification, modifiedMessage };
+}
+
+/**
+ * Parse a time string like "8am", "3:30pm", "noon" into a Date object for today
+ */
+function parseTimeString(timeStr) {
+  timeStr = timeStr.toLowerCase().trim();
+
+  // Handle "noon"
+  if (timeStr === 'noon') {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    return date;
+  }
+
+  // Handle "midnight"
+  if (timeStr === 'midnight') {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  // Handle "3pm", "3:30pm", "15:30"
+  const match = timeStr.match(/(\d+)(?::(\d+))?\s*(am|pm)?/);
+  if (match) {
+    let hour = parseInt(match[1]);
+    const minute = match[2] ? parseInt(match[2]) : 0;
+    const meridiem = match[3];
+
+    if (meridiem === 'pm' && hour !== 12) {
+      hour += 12;
+    } else if (meridiem === 'am' && hour === 12) {
+      hour = 0;
+    }
+
+    const date = new Date();
+    date.setHours(hour, minute, 0, 0);
+
+    // If the time is in the past, schedule for tomorrow
+    if (date < new Date()) {
+      date.setDate(date.getDate() + 1);
+    }
+
+    return date;
+  }
+
+  return null;
+}
+
 // Health check
 router.get('/health', (req, res) => {
   res.json({
@@ -22,7 +167,7 @@ router.get('/agents', (req, res) => {
 
 router.post('/agents/task', async (req, res) => {
   try {
-    const { agentType, taskType, task } = req.body;
+    let { agentType, taskType, task } = req.body;
 
     if (!task) {
       return res.status(400).json({ error: 'Task is required' });
@@ -34,6 +179,12 @@ router.post('/agents/task', async (req, res) => {
 
     logger.info('Task received', { agentType, taskType, task: task.substring(0, 50) });
 
+    // Check if the user is requesting a notification to be scheduled
+    const { scheduledNotification, modifiedMessage } = await detectAndScheduleNotification(task);
+    if (scheduledNotification) {
+      task = modifiedMessage; // Add system note for the agent
+    }
+
     const agent = agentFactory.getAgent(agentType);
     const result = await agent.processTask(task);
 
@@ -42,7 +193,8 @@ router.post('/agents/task', async (req, res) => {
       taskId: Date.now(),
       response: result.response,
       agent: result.agent,
-      error: result.error
+      error: result.error,
+      scheduledNotification: scheduledNotification || undefined
     });
   } catch (error) {
     logger.error('Error processing task', error);
@@ -900,60 +1052,11 @@ router.post('/wellness/session/message', async (req, res) => {
     await wellnessDataStore.appendToSession(date, sessionId, userMessage);
 
     // Build task for Guide agent
-    let task = message;
     const history = conversationHistory || [];
 
     // Check if user is requesting a notification to be scheduled
-    let scheduledNotification = null;
-    const scheduleMatch = message.match(/remind\s+me\s+to\s+(.+?)\s+(?:every|once)\s+(.+?)(?:\s+(?:from|starting)\s+(.+?))?(?:\s+(?:until|to)\s+(.+?))?$/i);
-
-    if (scheduleMatch) {
-      const [, reminderMessage, frequency, fromTime, untilTime] = scheduleMatch;
-
-      try {
-        // Parse the frequency expression
-        const cronExpression = notificationScheduler.parseToCron(frequency);
-
-        // Parse time range if provided
-        let endTime = null;
-        if (untilTime) {
-          const timeRange = notificationScheduler.parseTimeRange(fromTime, untilTime);
-          if (timeRange.until) {
-            const now = new Date();
-            endTime = new Date();
-            endTime.setHours(timeRange.until.hour, timeRange.until.minute || 0, 0, 0);
-
-            // If the end time is in the past, set it for today
-            if (endTime < now) {
-              endTime.setDate(endTime.getDate() + 1);
-            }
-          }
-        }
-
-        // Schedule the notification
-        scheduledNotification = await notificationScheduler.scheduleNotification({
-          message: reminderMessage.trim(),
-          type: 'recurring',
-          cronExpression,
-          endTime
-        });
-
-        logger.info('[WellnessSession] Scheduled notification from user request', {
-          notificationId: scheduledNotification.id,
-          message: reminderMessage,
-          frequency
-        });
-
-        // Add context for Guide so they know the reminder was scheduled
-        task = `${message}
-
-[System Note: I've scheduled a reminder for "${reminderMessage}" ${frequency}${untilTime ? ` until ${untilTime}` : ''}. Please confirm this to the user in a friendly way.]`;
-      } catch (error) {
-        logger.error('[WellnessSession] Error scheduling notification', {
-          error: error.message
-        });
-      }
-    }
+    const { scheduledNotification, modifiedMessage } = await detectAndScheduleNotification(message);
+    let task = modifiedMessage;
 
     // If this is a standup awaiting scores, provide enhanced context
     if (session?.awaitingScores && session?.type === 'standup') {
