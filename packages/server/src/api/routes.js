@@ -1266,4 +1266,168 @@ router.get('/wellness/sessions', async (req, res) => {
   }
 });
 
+// Outlook Calendar Integration routes
+import outlookManager from '../integrations/OutlookManager.js';
+
+router.post('/outlook/configure', (req, res) => {
+  try {
+    const { clientId, clientSecret, tenantId } = req.body;
+
+    if (!clientId || !clientSecret) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: clientId and clientSecret'
+      });
+    }
+
+    outlookManager.configure(clientId, clientSecret, tenantId);
+
+    res.json({
+      success: true,
+      message: 'Outlook configured successfully'
+    });
+  } catch (error) {
+    logger.error('Error configuring Outlook', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/auth-url', (req, res) => {
+  try {
+    const redirectUri = req.query.redirectUri || `${req.protocol}://${req.get('host')}/api/outlook/callback`;
+    const authUrl = outlookManager.getAuthUrl(redirectUri);
+
+    res.json({
+      success: true,
+      authUrl,
+      redirectUri
+    });
+  } catch (error) {
+    logger.error('Error generating auth URL', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+
+    if (!code) {
+      return res.status(400).send('Authorization code not provided');
+    }
+
+    const redirectUri = `${req.protocol}://${req.get('host')}/api/outlook/callback`;
+    await outlookManager.authenticate(code, redirectUri);
+
+    // Redirect to settings page with success message
+    res.redirect('/settings?outlook=connected');
+  } catch (error) {
+    logger.error('Error in OAuth callback', error);
+    res.redirect('/settings?outlook=error');
+  }
+});
+
+router.get('/outlook/status', (req, res) => {
+  try {
+    res.json({
+      configured: outlookManager.isConfigured(),
+      hasToken: !!outlookManager.accessToken,
+      expiresAt: outlookManager.expiresAt
+    });
+  } catch (error) {
+    logger.error('Error checking Outlook status', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/events', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: startDate and endDate'
+      });
+    }
+
+    const events = await outlookManager.getCalendarEvents(startDate, endDate);
+
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching calendar events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/events/today', async (req, res) => {
+  try {
+    const events = await outlookManager.getTodayEvents();
+
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching today events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/events/week', async (req, res) => {
+  try {
+    const events = await outlookManager.getWeekEvents();
+
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching week events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/outlook/events', async (req, res) => {
+  try {
+    const eventData = req.body;
+
+    if (!eventData.subject || !eventData.start || !eventData.end) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: subject, start, end'
+      });
+    }
+
+    const event = await outlookManager.createEvent(eventData);
+
+    res.json({
+      success: true,
+      event
+    });
+  } catch (error) {
+    logger.error('Error creating calendar event', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/outlook/disconnect', (req, res) => {
+  try {
+    outlookManager.disconnect();
+    res.json({
+      success: true,
+      message: 'Outlook disconnected successfully'
+    });
+  } catch (error) {
+    logger.error('Error disconnecting Outlook', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

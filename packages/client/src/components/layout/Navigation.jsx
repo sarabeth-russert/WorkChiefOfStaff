@@ -13,6 +13,7 @@ const Navigation = () => {
     { path: '/jira', label: 'Jira' },
     { path: '/medic', label: 'Medic' },
     { path: '/base-camp', label: 'Base Camp' },
+    { path: '/outbound-passage', label: 'Outbound Passage' },
     { path: '/settings', label: 'Settings' }
   ];
 
