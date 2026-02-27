@@ -23,8 +23,8 @@ const Dashboard = () => {
         const wellnessData = await wellnessResponse.json();
 
         // Try Oura readiness score first (nested under metrics.metrics)
-        if (wellnessData.metrics?.metrics?.readiness?.score) {
-          setWellnessScore(wellnessData.metrics.metrics.readiness.score);
+        if (wellnessData.metrics?.metrics?.readiness?.data?.[0]?.score) {
+          setWellnessScore(wellnessData.metrics.metrics.readiness.data[0].score);
           setWellnessSource('oura');
         }
         // Fallback to self-reported score from morning standup
