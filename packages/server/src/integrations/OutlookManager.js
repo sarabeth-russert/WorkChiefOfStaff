@@ -32,7 +32,6 @@ class OutlookManager {
 
     // Microsoft Graph API base URL
     this.baseUrl = 'https://graph.microsoft.com/v1.0';
-    this.authUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0`;
 
     // Scopes needed for calendar access
     this.scopes = [
@@ -135,7 +134,8 @@ class OutlookManager {
       state: state || Math.random().toString(36).substring(7)
     });
 
-    return `${this.authUrl}/authorize?${params.toString()}`;
+    const authUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0`;
+    return `${authUrl}/authorize?${params.toString()}`;
   }
 
   /**
@@ -143,7 +143,8 @@ class OutlookManager {
    */
   async authenticate(code, redirectUri) {
     try {
-      const response = await fetch(`${this.authUrl}/token`, {
+      const authUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0`;
+      const response = await fetch(`${authUrl}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -192,7 +193,8 @@ class OutlookManager {
     }
 
     try {
-      const response = await fetch(`${this.authUrl}/token`, {
+      const authUrl = `https://login.microsoftonline.com/${this.tenantId}/oauth2/v2.0`;
+      const response = await fetch(`${authUrl}/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
