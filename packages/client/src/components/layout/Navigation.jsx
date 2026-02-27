@@ -17,7 +17,6 @@ const Navigation = () => {
   const dropdownGroups = {
     planning: {
       label: 'Planning',
-      icon: '🗺️',
       items: [
         { path: '/outbound-passage', label: 'Outbound Passage', description: 'Calendar' },
         { path: '/map-room', label: 'Map Room', description: 'Documentation' },
@@ -26,7 +25,6 @@ const Navigation = () => {
     },
     operations: {
       label: 'Operations',
-      icon: '⚙️',
       items: [
         { path: '/trading-post', label: 'Trading Post', description: 'Apps & Services' },
         { path: '/medic', label: 'Medic', description: 'Wellness' }
@@ -108,7 +106,6 @@ const Navigation = () => {
                       }
                     `}
                   >
-                    <span>{group.icon}</span>
                     <span>{group.label}</span>
                     <span className={`transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                   </button>
