@@ -113,7 +113,7 @@ const Navigation = () => {
                   {/* Dropdown menu */}
                   {isOpen && (
                     <div
-                      className="absolute top-full mt-2 right-0 bg-cream border-4 border-jungle-dark shadow-vintage-strong rounded-lg overflow-hidden z-50 min-w-[240px]"
+                      className="absolute top-full right-0 bg-cream border-4 border-jungle-dark shadow-vintage-strong rounded-lg overflow-hidden z-50 min-w-[240px]"
                       onMouseEnter={() => setOpenDropdown(key)}
                       onMouseLeave={() => setOpenDropdown(null)}
                     >
