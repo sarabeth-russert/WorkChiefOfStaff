@@ -824,6 +824,10 @@ router.post('/wellness/session/message', async (req, res) => {
       });
     }
 
+    // Get current session to check if awaiting scores
+    const dailyData = await wellnessDataStore.getDailyMetrics(date);
+    const session = dailyData?.sessions?.find(s => s.id === sessionId);
+
     // Append user message to session
     const userMessage = {
       role: 'user',
@@ -833,11 +837,41 @@ router.post('/wellness/session/message', async (req, res) => {
 
     await wellnessDataStore.appendToSession(date, sessionId, userMessage);
 
-    // Call Guide agent via orchestrator
+    // Build task for Guide agent
+    let task = message;
     const history = conversationHistory || [];
+
+    // If this is a standup awaiting scores, provide enhanced context
+    if (session?.awaitingScores && session?.type === 'standup') {
+      // Extract scores from message (simple pattern matching)
+      const sleepMatch = message.match(/sleep[:\s]+(\d+)/i);
+      const readinessMatch = message.match(/readiness[:\s]+(\d+)/i);
+
+      const sleepScore = sleepMatch ? parseInt(sleepMatch[1]) : null;
+      const readinessScore = readinessMatch ? parseInt(readinessMatch[1]) : null;
+
+      // Build enhanced context for Guide
+      task = `The user has shared their morning wellness scores:
+${sleepScore ? `- Sleep Score: ${sleepScore}/100` : ''}
+${readinessScore ? `- Readiness Score: ${readinessScore}/100` : ''}
+
+User's message: "${message}"
+
+Based on these scores, please provide:
+1. A brief, encouraging assessment of their recovery and readiness
+2. One specific, actionable wellness tip for today
+3. What to focus on for optimal performance
+
+Keep your response warm, supportive, and under 150 words.`;
+
+      // Mark session as no longer awaiting scores
+      await wellnessDataStore.updateSession(date, sessionId, { awaitingScores: false });
+    }
+
+    // Call Guide agent via orchestrator
     const guideResponse = await orchestrator.executeTask({
       taskType: 'wellness',
-      task: message,
+      task,
       agentType: 'guide',
       history
     });

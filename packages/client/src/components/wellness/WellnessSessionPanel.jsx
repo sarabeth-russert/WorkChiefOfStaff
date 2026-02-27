@@ -169,6 +169,27 @@ const WellnessSessionPanel = () => {
             </div>
           )}
 
+          {/* Display Jira stats for retro sessions */}
+          {isRetro && activeSession.jiraStats && (
+            <div className="mb-4 p-4 bg-jungle bg-opacity-10 border-2 border-jungle rounded-lg">
+              <h3 className="font-poster text-sm text-jungle uppercase mb-2">
+                🎫 Jira Progress Today
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm text-vintage-text font-ui">
+                <div className="flex flex-col">
+                  <span className="text-xs opacity-70 uppercase">Created</span>
+                  <span className="font-poster text-lg">{activeSession.jiraStats.issuesCreated} issues</span>
+                  <span className="text-xs opacity-70">{activeSession.jiraStats.storyPointsAdded} story points</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs opacity-70 uppercase">Closed</span>
+                  <span className="font-poster text-lg text-jungle">{activeSession.jiraStats.issuesClosed} issues</span>
+                  <span className="text-xs opacity-70 text-jungle">{activeSession.jiraStats.storyPointsClosed} story points</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {sessionMessages.length === 0 ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-vintage-text opacity-60 font-serif text-center">

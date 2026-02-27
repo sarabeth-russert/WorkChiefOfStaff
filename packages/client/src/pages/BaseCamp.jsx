@@ -53,7 +53,7 @@ const BaseCamp = () => {
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
           <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
             <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-              🏕️ Base Camp
+              Base Camp
             </h1>
             <p className="text-lg text-vintage-text opacity-90 drop-shadow">
               Your daily planning and reflection journal. Track your standup plans and retrospective notes.
