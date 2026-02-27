@@ -1,6 +1,7 @@
 import express from 'express';
 import logger from '../config/logger.js';
 import agentFactory from '../agents/AgentFactory.js';
+import notificationScheduler from '../wellness/NotificationScheduler.js';
 
 const router = express.Router();
 
@@ -715,8 +716,6 @@ router.post('/wellness/sync', async (req, res) => {
 });
 
 // Notification scheduler endpoints
-const notificationScheduler = (await import('../wellness/NotificationScheduler.js')).default;
-
 router.post('/wellness/notifications/schedule', async (req, res) => {
   try {
     const { message, expression, fromTime, untilTime } = req.body;
