@@ -17,6 +17,7 @@ import providerFactory from './providers/ProviderFactory.js';
 import ouraManager from './integrations/OuraManager.js';
 import wellnessScheduler from './wellness/WellnessScheduler.js';
 import wellnessMeetings from './wellness/WellnessMeetings.js';
+import notificationScheduler from './wellness/NotificationScheduler.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -88,10 +89,6 @@ setupSocketHandlers(io);
 // Initialize wellness meetings with Socket.IO
 wellnessMeetings.setIO(io);
 
-// Initialize notification scheduler with Socket.IO
-const notificationScheduler = (await import('./wellness/NotificationScheduler.js')).default;
-notificationScheduler.setIO(io);
-
 // Initialize configuration system
 async function initializeServer() {
   try {
@@ -135,6 +132,9 @@ async function initializeServer() {
       // Start wellness scheduler
       await wellnessScheduler.start();
       logger.info('Wellness scheduler started successfully');
+
+      // Initialize notification scheduler with Socket.IO
+      notificationScheduler.setIO(io);
 
       // Restore scheduled notifications
       await notificationScheduler.restoreScheduledJobs();

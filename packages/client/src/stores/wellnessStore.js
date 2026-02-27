@@ -70,6 +70,20 @@ const useWellnessStore = create((set, get) => {
     });
   });
 
+  // Scheduled notifications from NotificationScheduler
+  socket.on('wellness:notification', (data) => {
+    console.log('Scheduled wellness notification:', data);
+    get().addNotification({
+      id: data.id || `notification-${Date.now()}`,
+      type: data.type || 'scheduled',
+      priority: 'normal',
+      title: 'Reminder',
+      message: data.message || 'You have a scheduled reminder.',
+      timestamp: data.timestamp || new Date().toISOString(),
+      data: data
+    });
+  });
+
   return {
     // State
     socket,

@@ -256,7 +256,7 @@ class NotificationScheduler {
    * Parse natural language time expression to cron
    * Examples:
    *   - "every hour" -> "0 * * * *"
-   *   - "every 30 minutes" -> "*/30 * * * *"
+   *   - "every 30 minutes" -> "* /30 * * * *" (without the space)
    *   - "every day at 3pm" -> "0 15 * * *"
    */
   parseToCron(expression) {
