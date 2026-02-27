@@ -533,6 +533,60 @@ class WellnessDataStore {
   }
 
   /**
+   * Update session fields
+   * @param {string} date - Date in YYYY-MM-DD format
+   * @param {string} sessionId - Session ID
+   * @param {Object} updates - Fields to update on the session
+   */
+  async updateSession(date, sessionId, updates) {
+    try {
+      if (!this.isValidDate(date)) {
+        throw new Error(`Invalid date format: ${date}. Expected YYYY-MM-DD`);
+      }
+
+      const filePath = this.getFilePath(date);
+
+      if (!fs.existsSync(filePath)) {
+        throw new Error(`No wellness data found for date: ${date}`);
+      }
+
+      let existingData;
+      try {
+        const fileContent = fs.readFileSync(filePath, 'utf8');
+        existingData = JSON.parse(fileContent);
+      } catch (parseError) {
+        throw new Error(`Error parsing wellness data for date ${date}: ${parseError.message}`);
+      }
+
+      if (!existingData.sessions) {
+        throw new Error(`No sessions found for date: ${date}`);
+      }
+
+      const sessionIndex = existingData.sessions.findIndex(s => s.id === sessionId);
+      if (sessionIndex < 0) {
+        throw new Error(`Session not found: ${sessionId}`);
+      }
+
+      // Apply updates to session
+      existingData.sessions[sessionIndex] = {
+        ...existingData.sessions[sessionIndex],
+        ...updates,
+        lastUpdated: new Date().toISOString()
+      };
+      existingData.lastUpdated = new Date().toISOString();
+
+      // Write to file
+      fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2), 'utf8');
+      logger.info('Updated wellness session', { date, sessionId, updates: Object.keys(updates) });
+
+      return existingData.sessions[sessionIndex];
+    } catch (error) {
+      logger.error('Error updating wellness session', { date, sessionId, error: error.message });
+      throw error;
+    }
+  }
+
+  /**
    * Mark session as completed
    * @param {string} date - Date in YYYY-MM-DD format
    * @param {string} sessionId - Session ID

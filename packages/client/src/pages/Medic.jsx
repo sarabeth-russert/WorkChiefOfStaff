@@ -106,6 +106,26 @@ const Medic = () => {
     setIsRefreshing(false);
   };
 
+  const handleTriggerStandup = async () => {
+    try {
+      const response = await fetch(`${apiUrl}/api/wellness/standup/trigger`, {
+        method: 'POST'
+      });
+      const result = await response.json();
+
+      if (result.success && !result.alreadyDelivered) {
+        alert('Morning standup triggered! Check your notifications.');
+      } else if (result.alreadyDelivered) {
+        alert('Morning standup already delivered today.');
+      } else {
+        alert('Failed to trigger standup: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error('Error triggering standup:', err);
+      alert('Error triggering standup: ' + err.message);
+    }
+  };
+
   const handleTriggerRetro = async () => {
     try {
       const response = await fetch(`${apiUrl}/api/wellness/retro/trigger`, {
@@ -170,7 +190,7 @@ const Medic = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
         <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
           <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-            🏥 Medic
+            Medic
           </h1>
           <p className="text-lg text-vintage-text opacity-90 drop-shadow">
             Monitor your adventurer's vitals and optimize your journey
@@ -221,6 +241,13 @@ const Medic = () => {
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-poster text-vintage-text">Today's Metrics</h2>
             <div className="flex gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleTriggerStandup}
+              >
+                🌅 Start Day
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

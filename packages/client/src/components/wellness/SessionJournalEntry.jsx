@@ -52,10 +52,23 @@ const SessionJournalEntry = ({
     }
 
     if (summary.accomplishments) {
+      // Handle accomplishments as array or string
+      const accomplishmentsList = Array.isArray(summary.accomplishments)
+        ? summary.accomplishments
+        : summary.accomplishments.split('\n').filter(item => item.trim());
+
       items.push(
         <div key="accomplishments" className="mb-2">
           <span className="font-poster text-sm text-jungle uppercase">Accomplishments:</span>
-          <p className="text-sm ml-2">{summary.accomplishments}</p>
+          {accomplishmentsList.length > 0 ? (
+            <ul className="list-disc list-inside ml-4 mt-1">
+              {accomplishmentsList.map((item, idx) => (
+                <li key={idx} className="text-sm mb-1">{item.trim()}</li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm ml-2">{summary.accomplishments}</p>
+          )}
         </div>
       );
     }
@@ -65,6 +78,19 @@ const SessionJournalEntry = ({
         <div key="notes" className="mb-2">
           <span className="font-poster text-sm text-mustard uppercase">Notes for Tomorrow:</span>
           <p className="text-sm ml-2">{summary.notesForTomorrow}</p>
+        </div>
+      );
+    }
+
+    // Add Jira stats for retro sessions
+    if (session.type === 'retro' && session.jiraStats) {
+      items.push(
+        <div key="jira" className="mb-2">
+          <span className="font-poster text-sm text-jungle uppercase">Jira Progress:</span>
+          <div className="text-sm ml-2 flex gap-4">
+            <span>Created: {session.jiraStats.issuesCreated} issues ({session.jiraStats.storyPointsAdded} pts)</span>
+            <span className="text-jungle">Closed: {session.jiraStats.issuesClosed} issues ({session.jiraStats.storyPointsClosed} pts)</span>
+          </div>
         </div>
       );
     }

@@ -17,14 +17,44 @@ const useWellnessStore = create((set, get) => {
   // Socket event handlers for wellness events
   socket.on('wellness:standup', (data) => {
     console.log('Wellness standup notification:', data);
-    // Don't add to notifications banner - user can access from Base Camp or Medic page
-    // Just log it for now
+
+    // Only show notification if we haven't completed a standup today
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const completionKey = `${date}-standup`;
+
+    if (!get().completedToday.has(completionKey)) {
+      get().addNotification({
+        id: `standup-${Date.now()}`,
+        type: 'standup',
+        priority: 'normal',
+        title: 'Time for Standup',
+        message: data.guidance || data.message || 'Your daily standup meeting is starting.',
+        timestamp: new Date().toISOString(),
+        sessionId: data.sessionId,
+        data: data
+      });
+    }
   });
 
   socket.on('wellness:retro', (data) => {
     console.log('Wellness retro notification:', data);
-    // Don't add to notifications banner - user can access from Base Camp or Medic page
-    // Just log it for now
+
+    // Only show notification if we haven't completed a retro today
+    const date = data.date || new Date().toISOString().split('T')[0];
+    const completionKey = `${date}-retro`;
+
+    if (!get().completedToday.has(completionKey)) {
+      get().addNotification({
+        id: `retro-${Date.now()}`,
+        type: 'retro',
+        priority: 'normal',
+        title: 'Time for Retrospective',
+        message: data.guidance || data.message || 'Your retrospective meeting is starting.',
+        timestamp: new Date().toISOString(),
+        sessionId: data.sessionId,
+        data: data
+      });
+    }
   });
 
   socket.on('wellness:stress-alert', (data) => {
@@ -55,6 +85,7 @@ const useWellnessStore = create((set, get) => {
     loading: false,
     error: null,
     notifications: [],
+    completedToday: new Set(), // Track completed sessions by date+type (e.g., "2026-02-26-standup")
     activeSession: null,
     sessionPanelOpen: false,
     sessionMessages: [],
@@ -257,7 +288,7 @@ const useWellnessStore = create((set, get) => {
     },
 
     completeSession: async (summary) => {
-      const { activeSession, notifications } = get();
+      const { activeSession, notifications, completedToday } = get();
       if (!activeSession) {
         throw new Error('No active session');
       }
@@ -279,6 +310,11 @@ const useWellnessStore = create((set, get) => {
         const data = await response.json();
 
         if (data.success) {
+          // Mark this session type as completed for today
+          const completionKey = `${date}-${activeSession.type}`;
+          const newCompletedToday = new Set(completedToday);
+          newCompletedToday.add(completionKey);
+
           // Remove the notification associated with this session
           const filteredNotifications = notifications.filter(
             n => n.sessionId !== activeSession.id
@@ -289,6 +325,7 @@ const useWellnessStore = create((set, get) => {
             sessionPanelOpen: false,
             sessionMessages: [],
             notifications: filteredNotifications,
+            completedToday: newCompletedToday,
             loading: false
           });
         } else {

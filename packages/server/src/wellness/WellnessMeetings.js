@@ -2,6 +2,12 @@ import logger from '../config/logger.js';
 import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 /**
  * WellnessMeetings manages wellness check-ins and meetings
@@ -21,19 +27,102 @@ class WellnessMeetings {
   }
 
   /**
-   * Get today's date in YYYY-MM-DD format
+   * Load wellness settings from file
    */
-  getTodayDate() {
-    return new Date().toISOString().split('T')[0];
+  async loadSettings() {
+    try {
+      const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+      const data = await fs.readFile(settingsPath, 'utf-8');
+      return JSON.parse(data);
+    } catch (error) {
+      logger.warn('[WellnessMeetings] Could not load settings, using defaults', { error: error.message });
+      return { timezone: 'America/Los_Angeles' };
+    }
   }
 
   /**
-   * Get yesterday's date in YYYY-MM-DD format
+   * Get today's date in YYYY-MM-DD format using configured timezone
+   */
+  getTodayDate() {
+    try {
+      // Load settings synchronously (cached after first load)
+      let timezone = 'America/Los_Angeles';
+      try {
+        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+        const data = require('fs').readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(data);
+        timezone = settings.timezone || timezone;
+      } catch (e) {
+        // Use default timezone if settings can't be loaded
+      }
+
+      // Use Intl.DateTimeFormat for reliable timezone conversion
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+
+      const parts = formatter.formatToParts(new Date());
+      const year = parts.find(p => p.type === 'year').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const day = parts.find(p => p.type === 'day').value;
+
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      logger.error('[WellnessMeetings] Error getting today date', {
+        error: error.message,
+        stack: error.stack
+      });
+      // Fallback to UTC if timezone conversion fails
+      return new Date().toISOString().split('T')[0];
+    }
+  }
+
+  /**
+   * Get yesterday's date in YYYY-MM-DD format using configured timezone
    */
   getYesterdayDate() {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+    try {
+      // Load settings synchronously (cached after first load)
+      let timezone = 'America/Los_Angeles';
+      try {
+        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
+        const data = require('fs').readFileSync(settingsPath, 'utf-8');
+        const settings = JSON.parse(data);
+        timezone = settings.timezone || timezone;
+      } catch (e) {
+        // Use default timezone if settings can't be loaded
+      }
+
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+
+      // Use Intl.DateTimeFormat for reliable timezone conversion
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+
+      const parts = formatter.formatToParts(yesterday);
+      const year = parts.find(p => p.type === 'year').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const day = parts.find(p => p.type === 'day').value;
+
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      logger.error('[WellnessMeetings] Error getting yesterday date', {
+        error: error.message,
+        stack: error.stack
+      });
+      // Fallback to UTC if timezone conversion fails
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      return yesterday.toISOString().split('T')[0];
+    }
   }
 
   /**
@@ -164,95 +253,85 @@ class WellnessMeetings {
     try {
       logger.info('[WellnessMeetings] Starting standup meeting');
 
-      // Check if Oura is configured
-      if (!ouraManager.isConfigured()) {
-        logger.warn('[WellnessMeetings] Oura not configured, skipping standup');
-        return {
-          success: false,
-          message: 'Oura Ring not configured'
-        };
-      }
-
-      // Get yesterday's data (Oura provides previous day's complete data)
-      const yesterday = this.getYesterdayDate();
       const today = this.getTodayDate();
+      const yesterday = this.getYesterdayDate();
 
-      logger.info('[WellnessMeetings] Fetching wellness metrics', { date: yesterday });
-
-      // Fetch all wellness metrics
-      const metrics = await ouraManager.getAllMetrics(yesterday, yesterday);
-
-      // Save to data store with standupDelivered flag
+      // Mark standup as delivered
       await wellnessDataStore.saveDailyMetrics(today, {
-        sleep: metrics.sleep,
-        activity: metrics.activity,
-        readiness: metrics.readiness,
-        heartRate: metrics.heartRate,
         standupDelivered: true,
         standupDeliveredAt: new Date().toISOString()
       });
 
-      // Build wellness context for Guide agent
-      const wellnessContext = this.buildWellnessContext(metrics);
+      // Get yesterday's notes for today
+      let yesterdayNotes = null;
+      try {
+        const yesterdayMetrics = await wellnessDataStore.getDailyMetrics(yesterday);
+        if (yesterdayMetrics && yesterdayMetrics.sessions) {
+          // Find the most recent completed retro with notes
+          const retrosWithNotes = yesterdayMetrics.sessions.filter(
+            s => s.type === 'retro' && s.status === 'completed' && s.summary && s.summary.notesForTomorrow
+          );
 
-      // Create task for Guide agent
-      const task = `You're conducting the morning wellness standup. Here's the wellness data from yesterday:
+          if (retrosWithNotes.length > 0) {
+            const lastRetro = retrosWithNotes[retrosWithNotes.length - 1];
+            yesterdayNotes = lastRetro.summary.notesForTomorrow;
+            logger.info('[WellnessMeetings] Retrieved yesterday\'s notes for tomorrow', {
+              notesLength: yesterdayNotes.length
+            });
+          }
+        }
+      } catch (error) {
+        logger.warn('[WellnessMeetings] Could not retrieve yesterday\'s notes', { error: error.message });
+      }
 
-${wellnessContext}
+      // Create initial prompt asking user for their scores
+      let initialPrompt = `Good morning! 🌅
 
-Please provide:
-1. A brief, encouraging summary of the user's recovery and readiness
-2. One specific, actionable wellness tip based on the data
-3. What to focus on today for optimal performance
+Since Oura Ring readiness data takes 24 hours to sync, let's start with what you're seeing in your Oura app right now.
+`;
 
-Keep your response warm, supportive, and under 150 words.`;
+      // Add yesterday's notes if available
+      if (yesterdayNotes) {
+        initialPrompt += `
+**Quick Reminder from Yesterday Evening:**
+${yesterdayNotes}
 
-      logger.info('[WellnessMeetings] Calling Guide agent for standup analysis');
+`;
+      }
 
-      // Execute task with Guide agent
-      const result = await orchestrator.executeTask({
-        taskType: 'wellness',
-        task,
-        agentType: 'guide',
-        stream: false
-      });
+      initialPrompt += `
+**Please share your scores from today:**
+- What's your **Sleep Score**? (0-100)
+- What's your **Readiness Score**? (0-100)
 
-      const response = result.success ? result.response : 'Unable to generate wellness summary at this time.';
+Once you share these, I can provide personalized guidance for your day!`;
 
-      // Create session with Guide's initial guidance
+      // Create session with prompt (without calling Guide agent yet)
       const sessionData = {
         type: 'standup',
-        initialGuidance: response,
+        initialGuidance: initialPrompt,
         conversation: [
           {
             role: 'assistant',
-            content: response,
+            content: initialPrompt,
             timestamp: new Date().toISOString()
           }
         ],
         status: 'active',
         startedAt: new Date().toISOString(),
-        metrics: {
-          sleep: metrics.sleep?.data?.[0],
-          activity: metrics.activity?.data?.[0],
-          readiness: metrics.readiness?.data?.[0]
-        }
+        awaitingScores: true // Flag to indicate we need user's scores first
       };
 
       const session = await wellnessDataStore.saveSession(today, sessionData);
-      logger.info('[WellnessMeetings] Created standup session', { sessionId: session.id });
+      logger.info('[WellnessMeetings] Created standup session (awaiting user scores)', { sessionId: session.id });
 
       // Emit Socket.IO event with sessionId
       if (this.io) {
         this.io.emit('wellness:standup', {
           date: today,
           sessionId: session.id,
-          metrics: {
-            sleep: metrics.sleep?.data?.[0],
-            activity: metrics.activity?.data?.[0],
-            readiness: metrics.readiness?.data?.[0]
-          },
-          guidance: response,
+          guidance: initialPrompt,
+          awaitingScores: true,
           timestamp: new Date().toISOString()
         });
         logger.info('[WellnessMeetings] Emitted wellness:standup event');
@@ -262,8 +341,7 @@ Keep your response warm, supportive, and under 150 words.`;
         success: true,
         date: today,
         sessionId: session.id,
-        metrics,
-        guidance: response
+        guidance: initialPrompt
       };
 
     } catch (error) {
@@ -282,6 +360,68 @@ Keep your response warm, supportive, and under 150 words.`;
         success: false,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Fetch Jira statistics for today
+   * Returns story points added and closed
+   */
+  async getJiraStatsForToday() {
+    let jiraManager;
+    try {
+      jiraManager = require('../integrations/JiraManager.js').default;
+
+      // Check if Jira is configured
+      if (!jiraManager.configured) {
+        logger.info('[WellnessMeetings] Jira not configured, skipping stats');
+        return null;
+      }
+
+      // JQL to find issues created today assigned to current user
+      const createdTodayJQL = 'created >= startOfDay(0d) AND assignee = currentUser()';
+
+      // JQL to find issues moved to Done today assigned to current user
+      const closedTodayJQL = 'status changed to Done DURING (startOfDay(0d), endOfDay(0d)) AND assignee = currentUser()';
+
+      const [createdResults, closedResults] = await Promise.all([
+        jiraManager.searchIssues(createdTodayJQL, { maxResults: 100 }),
+        jiraManager.searchIssues(closedTodayJQL, { maxResults: 100 })
+      ]);
+
+      // Sum story points (checking common field names)
+      const sumStoryPoints = (issues) => {
+        return issues.reduce((sum, issue) => {
+          const storyPoints =
+            issue.fields?.customfield_10016 || // Common story points field
+            issue.fields?.storyPoints ||
+            issue.fields?.['Story Points'] ||
+            0;
+          return sum + (parseFloat(storyPoints) || 0);
+        }, 0);
+      };
+
+      const createdIssues = createdResults?.issues || [];
+      const closedIssues = closedResults?.issues || [];
+
+      logger.info('[WellnessMeetings] Fetched Jira stats', {
+        issuesCreated: createdIssues.length,
+        issuesClosed: closedIssues.length
+      });
+
+      return {
+        issuesCreated: createdIssues.length,
+        storyPointsAdded: sumStoryPoints(createdIssues),
+        issuesClosed: closedIssues.length,
+        storyPointsClosed: sumStoryPoints(closedIssues)
+      };
+    } catch (error) {
+      logger.warn('[WellnessMeetings] Could not fetch Jira stats', {
+        error: error.message,
+        stack: error.stack,
+        configured: jiraManager?.configured
+      });
+      return null;
     }
   }
 
@@ -310,30 +450,47 @@ Keep your response warm, supportive, and under 150 words.`;
       const activityData = await ouraManager.getDailyActivity(today, today);
       const heartRateData = await ouraManager.getHeartRate(today, today);
 
+      // Fetch Jira statistics for today
+      const jiraStats = await this.getJiraStatsForToday();
+
       // Get morning standup session to include morning plan context
       let morningPlan = null;
-      let standupSession = null;
       try {
-        standupSession = await wellnessDataStore.getActiveSession(today, 'standup');
-        if (!standupSession) {
-          // Also check completed standup sessions from today
-          const dailyMetrics = await wellnessDataStore.getDailyMetrics(today);
-          if (dailyMetrics && dailyMetrics.sessions) {
-            standupSession = dailyMetrics.sessions.find(s => s.type === 'standup');
-          }
-        }
+        // Get today's daily metrics to search all standup sessions
+        const dailyMetrics = await wellnessDataStore.getDailyMetrics(today);
+        logger.info('[WellnessMeetings] Retrieved daily metrics for standup search', {
+          hasSessions: !!dailyMetrics?.sessions,
+          sessionCount: dailyMetrics?.sessions?.length || 0
+        });
 
-        if (standupSession && standupSession.conversation) {
-          // Extract morning plan from standup conversation
-          const planMessage = standupSession.conversation.find(msg =>
-            msg.role === 'user' && msg.content && msg.content.toLowerCase().includes('plan')
+        if (dailyMetrics && dailyMetrics.sessions) {
+          // Find the most recent standup with a plan (prioritize completed)
+          const standupsWithPlan = dailyMetrics.sessions.filter(
+            s => s.type === 'standup' && s.summary && s.summary.plan
           );
-          if (planMessage) {
-            morningPlan = planMessage.content;
+
+          logger.info('[WellnessMeetings] Filtered standups with plans', {
+            count: standupsWithPlan.length
+          });
+
+          if (standupsWithPlan.length > 0) {
+            // Get the last (most recent) standup with a plan
+            const standupSession = standupsWithPlan[standupsWithPlan.length - 1];
+            morningPlan = standupSession.summary.plan;
+
+            logger.info('[WellnessMeetings] Retrieved morning plan from standup', {
+              sessionId: standupSession.id,
+              planLength: morningPlan.length
+            });
+          } else {
+            logger.info('[WellnessMeetings] No standup with plan found today');
           }
         }
       } catch (error) {
-        logger.warn('[WellnessMeetings] Could not retrieve morning standup session', { error: error.message });
+        logger.warn('[WellnessMeetings] Could not retrieve morning standup session', {
+          error: error.message,
+          stack: error.stack
+        });
       }
 
       // Save to data store with retroDelivered flag
@@ -354,12 +511,24 @@ Keep your response warm, supportive, and under 150 words.`;
         context += `- Steps: ${activity.steps ? activity.steps.toLocaleString() : 'N/A'}\n`;
         context += `- Active Calories: ${activity.active_calories || 'N/A'} kcal\n`;
         context += `- Total Calories: ${activity.total_calories || 'N/A'} kcal\n\n`;
+      } else {
+        // Oura doesn't provide final activity summaries until the day is complete
+        context += '## Activity\n';
+        context += 'Note: Oura Ring provides final daily activity summaries the following morning. The activity data for today will be available in tomorrow\'s standup.\n\n';
+        context += 'You can still provide encouragement and evening wind-down suggestions based on the user\'s overall wellness journey.\n\n';
       }
 
       // Add morning plan context if available
       if (morningPlan) {
         context += `## Morning Plan\n`;
         context += `This morning, the user shared: "${morningPlan}"\n\n`;
+      }
+
+      // Add Jira stats if available
+      if (jiraStats) {
+        context += `## Jira Progress Today\n`;
+        context += `- Issues Created: ${jiraStats.issuesCreated} (${jiraStats.storyPointsAdded} story points)\n`;
+        context += `- Issues Closed: ${jiraStats.issuesClosed} (${jiraStats.storyPointsClosed} story points completed)\n\n`;
       }
 
       // Create task for Guide agent with morning plan context
@@ -413,13 +582,14 @@ Keep your response warm, supportive, and under 150 words. Focus on recovery and 
         metrics: {
           activity: activityData?.data?.[0]
         },
-        morningPlan: morningPlan || null
+        morningPlan: morningPlan || null,
+        jiraStats: jiraStats || null
       };
 
       const retroSession = await wellnessDataStore.saveSession(today, retroSessionData);
       logger.info('[WellnessMeetings] Created retro session', { sessionId: retroSession.id });
 
-      // Emit Socket.IO event with sessionId and morningPlan
+      // Emit Socket.IO event with sessionId, morningPlan, and jiraStats
       if (this.io) {
         this.io.emit('wellness:retro', {
           date: today,
@@ -429,6 +599,7 @@ Keep your response warm, supportive, and under 150 words. Focus on recovery and 
           },
           guidance: response,
           morningPlan: morningPlan || null,
+          jiraStats: jiraStats || null,
           timestamp: new Date().toISOString()
         });
         logger.info('[WellnessMeetings] Emitted wellness:retro event');
