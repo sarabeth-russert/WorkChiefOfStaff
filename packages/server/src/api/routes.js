@@ -11,43 +11,92 @@ const router = express.Router();
  * - "remind me to [message] at [time]"
  * - "remind me to [message] every [frequency]"
  * - "schedule a notification to [message] at [time]"
+ * - "schedule notifications for 8am, 9am, and 10am" (multiple times)
  */
 async function detectAndScheduleNotification(message) {
   let scheduledNotification = null;
+  let scheduledNotifications = [];
   let modifiedMessage = message;
+
+  // Pattern 0: Multiple times in one request
+  // "schedule notifications for 8am, 9am, and 10am" or "remind me at 8am, 9am, and 10am to X"
+  const multiTimeMatch = message.match(/(?:remind me|schedule (?:some )?(?:notifications?|reminders?))(?: to (.+?))? (?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)/i);
+
+  if (multiTimeMatch) {
+    const reminderMessage = multiTimeMatch[1] || 'reminder';
+    const timesStr = multiTimeMatch[2];
+
+    try {
+      // Split on commas and "and"
+      const timeStrings = timesStr.split(/[,\s]+and\s+|,\s*/).map(t => t.trim()).filter(t => t);
+
+      for (const timeStr of timeStrings) {
+        const time = parseTimeString(timeStr);
+        if (time) {
+          const notification = await notificationScheduler.scheduleNotification({
+            message: reminderMessage.trim(),
+            type: 'one-time',
+            time: time
+          });
+
+          scheduledNotifications.push({ notification, timeStr });
+
+          logger.info('[NotificationHelper] Scheduled notification (multi-time)', {
+            notificationId: notification.id,
+            message: reminderMessage,
+            time: time.toISOString()
+          });
+        }
+      }
+
+      if (scheduledNotifications.length > 0) {
+        const timesList = scheduledNotifications.map(s => s.timeStr).join(', ');
+        modifiedMessage = `${message}
+
+[System Note: I've scheduled ${scheduledNotifications.length} notifications for "${reminderMessage}" at: ${timesList}. Please confirm this to the user in a friendly, brief way (1-2 sentences max).]`;
+        scheduledNotification = scheduledNotifications[0].notification; // Return first for API response
+      }
+    } catch (error) {
+      logger.error('[NotificationHelper] Error scheduling multi-time notifications', {
+        error: error.message
+      });
+    }
+  }
 
   // Pattern 1: One-time notification at specific time
   // "remind me to [message] at [time]"
-  const oneTimeMatch = message.match(/(?:remind me to|schedule (?:a )?(?:notification|reminder) to)\s+(.+?)\s+at\s+(.+?)(?:\s+today)?$/i);
+  if (!scheduledNotification) {
+    const oneTimeMatch = message.match(/(?:remind me to|schedule (?:a )?(?:notification|reminder) to)\s+(.+?)\s+at\s+([\d\w:]+(?:am|pm)?)\s*$/i);
 
-  if (oneTimeMatch) {
-    const [, reminderMessage, timeStr] = oneTimeMatch;
+    if (oneTimeMatch) {
+      const [, reminderMessage, timeStr] = oneTimeMatch;
 
-    try {
-      // Parse the time string (e.g., "8am", "3:30pm", "noon")
-      const time = parseTimeString(timeStr);
+      try {
+        // Parse the time string (e.g., "8am", "3:30pm", "noon")
+        const time = parseTimeString(timeStr);
 
-      if (time) {
-        scheduledNotification = await notificationScheduler.scheduleNotification({
-          message: reminderMessage.trim(),
-          type: 'one-time',
-          time: time
+        if (time) {
+          scheduledNotification = await notificationScheduler.scheduleNotification({
+            message: reminderMessage.trim(),
+            type: 'one-time',
+            time: time
+          });
+
+          logger.info('[NotificationHelper] Scheduled one-time notification', {
+            notificationId: scheduledNotification.id,
+            message: reminderMessage,
+            time: time.toISOString()
+          });
+
+          modifiedMessage = `${message}
+
+[System Note: I've scheduled a one-time notification for "${reminderMessage}" at ${timeStr}. Please confirm this to the user in a friendly way (1-2 sentences max).]`;
+        }
+      } catch (error) {
+        logger.error('[NotificationHelper] Error scheduling one-time notification', {
+          error: error.message
         });
-
-        logger.info('[NotificationHelper] Scheduled one-time notification', {
-          notificationId: scheduledNotification.id,
-          message: reminderMessage,
-          time: time.toISOString()
-        });
-
-        modifiedMessage = `${message}
-
-[System Note: I've scheduled a one-time notification for "${reminderMessage}" at ${timeStr}. Please confirm this to the user in a friendly way.]`;
       }
-    } catch (error) {
-      logger.error('[NotificationHelper] Error scheduling one-time notification', {
-        error: error.message
-      });
     }
   }
 
