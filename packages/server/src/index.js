@@ -63,10 +63,28 @@ app.use(express.urlencoded({ extended: true }));
 
 // Request logging
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`, {
-    ip: req.ip,
-    userAgent: req.get('user-agent')
-  });
+  // Log routine data retrieval at debug level to reduce noise
+  const routineEndpoints = [
+    '/api/wellness/daily',
+    '/api/wellness/trends',
+    '/api/wellness/sessions',
+    '/api/outlook/events/today',
+    '/api/jira/projects'
+  ];
+
+  const isRoutine = routineEndpoints.some(endpoint => req.path.startsWith(endpoint));
+
+  if (isRoutine) {
+    logger.debug(`${req.method} ${req.path}`, {
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    });
+  } else {
+    logger.info(`${req.method} ${req.path}`, {
+      ip: req.ip,
+      userAgent: req.get('user-agent')
+    });
+  }
   next();
 });
 

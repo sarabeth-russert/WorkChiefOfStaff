@@ -588,6 +588,96 @@ class JiraManager {
   isConfigured() {
     return this.configured;
   }
+
+  /**
+   * Get user's Jira metrics
+   * Returns count of in progress tickets and story points
+   */
+  async getUserMetrics(projectKey = 'CONTECH') {
+    try {
+      // Get "In Progress" tickets assigned to current user
+      const jql = `project = ${projectKey} AND assignee = currentUser() AND status = "In Progress"`;
+
+      const params = new URLSearchParams({
+        jql,
+        maxResults: 1000,
+        fields: 'key'
+      });
+
+      const data = await this.makeRequest(`/search?${params}`);
+      const issues = data.issues || [];
+
+      // Fetch each issue individually to get custom fields (search doesn't return them properly)
+      let totalPoints = 0;
+      const issueDetails = await Promise.all(
+        issues.map(issue => this.getIssue(issue.key))
+      );
+
+      issueDetails.forEach(issueData => {
+        const storyPoints = issueData.fields?.customfield_10106;
+        if (storyPoints && typeof storyPoints === 'number') {
+          totalPoints += storyPoints;
+        }
+      });
+
+      return {
+        inProgressTickets: issues.length,
+        totalPoints: totalPoints
+      };
+    } catch (error) {
+      logger.error('Error fetching user metrics', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Get tickets closed on a specific date by current user
+   * Returns count and story points
+   * @param {string} projectKey - Project key
+   * @param {string} date - Date in YYYY-MM-DD format (defaults to today)
+   */
+  async getClosedOnDate(projectKey = 'CONTECH', date = null) {
+    try {
+      const targetDate = date || new Date().toISOString().split('T')[0];
+      const nextDay = new Date(targetDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      const nextDayStr = nextDay.toISOString().split('T')[0];
+
+      // JQL to find tickets moved to Done on the specific date by current user
+      // Use resolved date range to get tickets closed on that specific day
+      const jql = `project = ${projectKey} AND assignee = currentUser() AND status = "Done" AND resolved >= "${targetDate}" AND resolved < "${nextDayStr}"`;
+
+      const params = new URLSearchParams({
+        jql,
+        maxResults: 1000,
+        fields: 'key'
+      });
+
+      const data = await this.makeRequest(`/search?${params}`);
+      const issues = data.issues || [];
+
+      // Fetch each issue individually to get custom fields (search doesn't return them properly)
+      let totalPoints = 0;
+      const issueDetails = await Promise.all(
+        issues.map(issue => this.getIssue(issue.key))
+      );
+
+      issueDetails.forEach(issueData => {
+        const storyPoints = issueData.fields?.customfield_10106;
+        if (storyPoints && typeof storyPoints === 'number') {
+          totalPoints += storyPoints;
+        }
+      });
+
+      return {
+        closedTickets: issues.length,
+        closedPoints: totalPoints
+      };
+    } catch (error) {
+      logger.error('Error fetching closed tickets', { error: error.message, date });
+      throw error;
+    }
+  }
 }
 
 // Singleton instance

@@ -67,9 +67,12 @@ class ClaudeCliProvider extends AIProvider {
       promptLength: fullPrompt.length
     });
 
-    // Spawn Claude CLI
+    // Spawn Claude CLI - unset CLAUDECODE to allow nested sessions
+    const env = { ...process.env };
+    delete env.CLAUDECODE;
     const cliProcess = spawn(this.cliPath, args, {
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env
     });
 
     // Write prompt to stdin

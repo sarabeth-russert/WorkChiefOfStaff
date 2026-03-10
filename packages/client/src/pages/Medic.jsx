@@ -5,6 +5,11 @@ import Button from '../components/ui/Button';
 import WellnessMetricCard from '../components/wellness/WellnessMetricCard';
 import WellnessTrendChart from '../components/wellness/WellnessTrendChart';
 import WellnessSettings from '../components/wellness/WellnessSettings';
+import ReadinessContributors from '../components/wellness/ReadinessContributors';
+import SleepContributors from '../components/wellness/SleepContributors';
+import OuraScoreChart from '../components/wellness/OuraScoreChart';
+import ScoreGauge from '../components/wellness/ScoreGauge';
+import HeartRateInfo from '../components/wellness/HeartRateInfo';
 
 const Medic = () => {
   const [wellnessData, setWellnessData] = useState(null);
@@ -66,9 +71,21 @@ const Medic = () => {
       }
 
       const data = await response.json();
+      console.log('[Oura Data] Medic page - Wellness data received:', data);
+
+      if (data.metrics?.metrics?.readiness) {
+        console.log('[Oura Data] Medic page - Readiness:', data.metrics.metrics.readiness);
+      }
+      if (data.metrics?.metrics?.sleep) {
+        console.log('[Oura Data] Medic page - Sleep:', data.metrics.metrics.sleep);
+      }
+      if (data.metrics?.metrics?.activity) {
+        console.log('[Oura Data] Medic page - Activity:', data.metrics.metrics.activity);
+      }
+
       setWellnessData(data);
     } catch (err) {
-      console.error('Error fetching wellness data:', err);
+      console.error('[Oura Data] Error fetching wellness data:', err);
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -80,10 +97,41 @@ const Medic = () => {
       const response = await fetch(`${apiUrl}/api/wellness/trends?days=7`);
       if (response.ok) {
         const data = await response.json();
-        setTrendData(data.trends || []);
+        console.log('[Oura Data] Medic page - 7-day trend data received:', data.trends);
+
+        // Transform trend data for charting
+        const transformed = {};
+        data.trends?.forEach(dayData => {
+          const date = dayData.date;
+          if (!transformed[date]) {
+            transformed[date] = { date };
+          }
+
+          // Extract readiness score
+          if (dayData.metrics?.readiness?.data?.[0]?.score) {
+            transformed[date].readiness = dayData.metrics.readiness.data[0].score;
+          }
+
+          // Extract sleep score
+          if (dayData.metrics?.sleep?.data?.[0]?.score) {
+            transformed[date].sleep = dayData.metrics.sleep.data[0].score;
+          }
+
+          // Extract activity score
+          if (dayData.metrics?.activity?.data?.[0]?.score) {
+            transformed[date].activity = dayData.metrics.activity.data[0].score;
+          }
+        });
+
+        const chartData = Object.values(transformed).sort((a, b) =>
+          new Date(a.date) - new Date(b.date)
+        );
+
+        console.log('[Oura Data] Transformed chart data:', chartData);
+        setTrendData(chartData);
       }
     } catch (err) {
-      console.error('Error fetching trend data:', err);
+      console.error('[Oura Data] Error fetching trend data:', err);
     }
   };
 
@@ -100,50 +148,12 @@ const Medic = () => {
   };
 
   const handleRefresh = async () => {
+    console.log('[Oura Data] Manual refresh triggered on Medic page');
     setIsRefreshing(true);
     await fetchWellnessData();
     await fetchTrendData();
+    console.log('[Oura Data] Manual refresh complete on Medic page');
     setIsRefreshing(false);
-  };
-
-  const handleTriggerStandup = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/api/wellness/standup/trigger`, {
-        method: 'POST'
-      });
-      const result = await response.json();
-
-      if (result.success && !result.alreadyDelivered) {
-        alert('Morning standup triggered! Check your notifications.');
-      } else if (result.alreadyDelivered) {
-        alert('Morning standup already delivered today.');
-      } else {
-        alert('Failed to trigger standup: ' + (result.error || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error('Error triggering standup:', err);
-      alert('Error triggering standup: ' + err.message);
-    }
-  };
-
-  const handleTriggerRetro = async () => {
-    try {
-      const response = await fetch(`${apiUrl}/api/wellness/retro/trigger`, {
-        method: 'POST'
-      });
-      const result = await response.json();
-
-      if (result.success && !result.alreadyDelivered) {
-        alert('Evening retro triggered! Check your notifications.');
-      } else if (result.alreadyDelivered) {
-        alert('Evening retro already delivered today.');
-      } else {
-        alert('Failed to trigger retro: ' + (result.error || 'Unknown error'));
-      }
-    } catch (err) {
-      console.error('Error triggering retro:', err);
-      alert('Error triggering retro: ' + err.message);
-    }
   };
 
   const handleSaveSettings = async (newSettings) => {
@@ -236,92 +246,108 @@ const Medic = () => {
       )}
 
       {/* Today's Metrics */}
-      {!isLoading && wellnessData && (
+      {!isLoading && wellnessData && wellnessData.metrics && (
         <>
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-poster text-vintage-text">Today's Metrics</h2>
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTriggerStandup}
-              >
-                🌅 Start Day
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleTriggerRetro}
-              >
-                🌙 End Day
-              </Button>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-              >
-                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
-              </Button>
-            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
+            </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {wellnessData.sleep && (
-              <WellnessMetricCard
-                title="Sleep"
-                score={wellnessData.sleep.score}
-                icon="😴"
-                iconImage="/images/wellness/sleep.png"
-                description={`${wellnessData.sleep.total_hours || 0}h total, ${wellnessData.sleep.deep_hours || 0}h deep`}
-                status={getMetricStatus(wellnessData.sleep.score)}
-                lastUpdated={wellnessData.sleep.timestamp}
-              />
-            )}
-
-            {wellnessData.activity && (
-              <WellnessMetricCard
-                title="Activity"
-                score={wellnessData.activity.score}
-                icon="🏃"
-                iconImage="/images/wellness/activity.png"
-                description={`${wellnessData.activity.steps || 0} steps, ${wellnessData.activity.calories || 0} cal`}
-                status={getMetricStatus(wellnessData.activity.score)}
-                lastUpdated={wellnessData.activity.timestamp}
-              />
-            )}
-
-            {wellnessData.readiness && (
-              <WellnessMetricCard
+          {/* Score Gauges */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {wellnessData.metrics.metrics?.readiness?.data?.[0] && (
+              <ScoreGauge
+                score={wellnessData.metrics.metrics.readiness.data[0].score}
                 title="Readiness"
-                score={wellnessData.readiness.score}
+                subtitle="How ready you are for the day"
                 icon="💪"
-                iconImage="/images/wellness/readiness.png"
-                description={`HRV: ${wellnessData.readiness.hrv || 0}ms, RHR: ${wellnessData.readiness.resting_hr || 0}bpm`}
-                status={getMetricStatus(wellnessData.readiness.score)}
-                lastUpdated={wellnessData.readiness.timestamp}
+              />
+            )}
+
+            {wellnessData.metrics.metrics?.sleep?.data?.[0] && (
+              <ScoreGauge
+                score={wellnessData.metrics.metrics.sleep.data[0].score}
+                title="Sleep"
+                subtitle="Quality of last night's sleep"
+                icon="😴"
+              />
+            )}
+
+            {wellnessData.metrics.metrics?.activity?.data?.[0] && (
+              <ScoreGauge
+                score={wellnessData.metrics.metrics.activity.data[0].score}
+                title="Activity"
+                subtitle="Yesterday's activity level"
+                icon="🏃"
               />
             )}
           </div>
+
+          {/* Detailed Contributors */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {wellnessData.metrics.metrics?.readiness?.data?.[0]?.contributors && (
+              <ReadinessContributors
+                contributors={wellnessData.metrics.metrics.readiness.data[0].contributors}
+              />
+            )}
+
+            {wellnessData.metrics.metrics?.sleep?.data?.[0]?.contributors && (
+              <SleepContributors
+                contributors={wellnessData.metrics.metrics.sleep.data[0].contributors}
+              />
+            )}
+          </div>
+
+          {/* Heart Rate Data */}
+          {wellnessData.metrics.metrics?.heartRate && (
+            <HeartRateInfo heartRateData={wellnessData.metrics.metrics.heartRate} />
+          )}
+
+          {/* Body Temperature */}
+          {wellnessData.metrics.metrics?.readiness?.data?.[0]?.temperature_deviation !== undefined && (
+            <Card variant="canvas">
+              <h3 className="text-2xl font-poster text-vintage-text mb-4">Body Temperature</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-3xl font-poster text-vintage-text">
+                    {wellnessData.metrics.metrics.readiness.data[0].temperature_deviation > 0 ? '+' : ''}
+                    {wellnessData.metrics.metrics.readiness.data[0].temperature_deviation.toFixed(2)}°C
+                  </div>
+                  <div className="text-sm font-ui uppercase text-vintage-text opacity-70">
+                    Temperature Deviation
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-poster text-vintage-text">
+                    {wellnessData.metrics.metrics.readiness.data[0].temperature_trend_deviation > 0 ? '+' : ''}
+                    {wellnessData.metrics.metrics.readiness.data[0].temperature_trend_deviation.toFixed(2)}°C
+                  </div>
+                  <div className="text-sm font-ui uppercase text-vintage-text opacity-70">
+                    Trend Deviation
+                  </div>
+                </div>
+              </div>
+              <p className="text-sm text-vintage-text opacity-70 mt-4 text-center">
+                Relative to your baseline body temperature
+              </p>
+            </Card>
+          )}
         </>
       )}
 
       {/* Trend Visualization */}
       {!isLoading && trendData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WellnessTrendChart
-            title="Sleep Trend (7 Days)"
-            data={trendData.filter(d => d.type === 'sleep')}
-            metricKey="sleep"
-            scoreKey="score"
-          />
-          <WellnessTrendChart
-            title="Readiness Trend (7 Days)"
-            data={trendData.filter(d => d.type === 'readiness')}
-            metricKey="readiness"
-            scoreKey="score"
-          />
-        </div>
+        <OuraScoreChart
+          data={trendData}
+          title="7-Day Wellness Trends"
+        />
       )}
 
       {/* No Data State */}

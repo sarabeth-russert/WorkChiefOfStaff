@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
 import logger from '../config/logger.js';
+import WebSocket from 'ws';
 
 /**
  * Microsoft Outlook Calendar Integration Manager
@@ -16,6 +17,11 @@ class OutlookManager {
     this.clientSecret = null;
     this.tenantId = 'common'; // 'common' for multi-tenant, or specific tenant ID
     this.configured = false;
+
+    // Chrome remote debugging
+    this.cookies = null;
+    this.authMethod = 'oauth'; // 'oauth' or 'cookies'
+    this.chromeDebugPort = 9222;
 
     // Rate limiting
     this.rateLimitRemaining = null;
@@ -60,10 +66,18 @@ class OutlookManager {
         this.clientId = config.clientId;
         this.clientSecret = config.clientSecret;
         this.tenantId = config.tenantId || 'common';
-        this.configured = !!(this.accessToken && this.clientId);
+        this.authMethod = config.authMethod || 'oauth';
+        this.cookies = config.cookies || null;
+        this.chromeDebugPort = config.chromeDebugPort || 9222;
+
+        // Configured if we have either OAuth tokens or cookies
+        this.configured = !!(
+          (this.accessToken && this.clientId) ||
+          (this.cookies && this.authMethod === 'cookies')
+        );
 
         if (this.configured) {
-          logger.info('Outlook configuration loaded from file');
+          logger.info('Outlook configuration loaded from file', { authMethod: this.authMethod });
         }
       }
     } catch (error) {
@@ -83,6 +97,9 @@ class OutlookManager {
         clientId: this.clientId,
         clientSecret: this.clientSecret,
         tenantId: this.tenantId,
+        authMethod: this.authMethod,
+        cookies: this.cookies,
+        chromeDebugPort: this.chromeDebugPort,
         lastUpdated: new Date().toISOString()
       };
 
@@ -248,10 +265,316 @@ class OutlookManager {
   }
 
   /**
+   * Connect to Chrome remote debugging and extract access token from Outlook session
+   * @param {number} port - Chrome remote debugging port (default: 9222)
+   */
+  async extractCookiesFromChrome(port = 9222) {
+    try {
+      this.chromeDebugPort = port;
+
+      // Get list of targets (tabs) from Chrome
+      const targetsResponse = await fetch(`http://localhost:${port}/json`);
+      if (!targetsResponse.ok) {
+        throw new Error(`Chrome remote debugging not available on port ${port}. Start Chrome with: chrome --remote-debugging-port=${port}`);
+      }
+
+      const targets = await targetsResponse.json();
+
+      // Find an Outlook tab
+      let targetTab = targets.find(t =>
+        t.type === 'page' &&
+        (t.url?.includes('outlook.office.com') ||
+         t.url?.includes('outlook.live.com'))
+      );
+
+      if (!targetTab) {
+        throw new Error('No Outlook tab found. Please open outlook.office.com in Chrome and log in.');
+      }
+
+      logger.info('Connecting to Outlook tab', {
+        title: targetTab.title,
+        url: targetTab.url
+      });
+
+      // Connect to the tab via WebSocket
+      const ws = new WebSocket(targetTab.webSocketDebuggerUrl);
+
+      return new Promise((resolve, reject) => {
+        let messageId = 1;
+        const pendingRequests = new Map();
+        let extractedToken = null;
+        let extractedCookies = null;
+
+        ws.on('open', () => {
+          logger.info('WebSocket connection established');
+
+          // Enable Runtime domain for executing JavaScript
+          const enableRuntimeMsg = {
+            id: messageId++,
+            method: 'Runtime.enable'
+          };
+          ws.send(JSON.stringify(enableRuntimeMsg));
+
+          // Enable Network domain
+          const enableNetworkMsg = {
+            id: messageId++,
+            method: 'Network.enable'
+          };
+          ws.send(JSON.stringify(enableNetworkMsg));
+
+          // Get all cookies
+          const getCookiesMsg = {
+            id: messageId++,
+            method: 'Network.getAllCookies'
+          };
+          pendingRequests.set(getCookiesMsg.id, 'getCookies');
+          ws.send(JSON.stringify(getCookiesMsg));
+
+          // Try to extract access token from localStorage/sessionStorage
+          const extractTokenScript = `
+            (function() {
+              try {
+                let token = null;
+
+                // Helper to extract token from MSAL cache structure
+                function extractFromMsalCache(cacheStr) {
+                  try {
+                    const cache = JSON.parse(cacheStr);
+
+                    // MSAL cache structure: { AccessToken: { key: { secret: 'token', ... } } }
+                    if (cache.AccessToken) {
+                      const tokens = Object.values(cache.AccessToken);
+                      if (tokens.length > 0 && tokens[0].secret) {
+                        // Make sure it's a JWT (starts with eyJ)
+                        if (tokens[0].secret.startsWith('eyJ')) {
+                          return tokens[0].secret;
+                        }
+                      }
+                    }
+
+                    // Try alternative structures
+                    if (cache.accessToken) return cache.accessToken;
+                    if (cache.access_token) return cache.access_token;
+
+                    // Check for nested token objects
+                    for (const value of Object.values(cache)) {
+                      if (value && typeof value === 'object') {
+                        if (value.secret && value.secret.startsWith('eyJ')) {
+                          return value.secret;
+                        }
+                        if (value.accessToken && value.accessToken.startsWith('eyJ')) {
+                          return value.accessToken;
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    return null;
+                  }
+                  return null;
+                }
+
+                // Search localStorage
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key && (key.includes('msal') || key.includes('token'))) {
+                    const value = localStorage.getItem(key);
+                    if (value) {
+                      // Try to parse as MSAL cache
+                      const extracted = extractFromMsalCache(value);
+                      if (extracted) {
+                        token = extracted;
+                        break;
+                      }
+                      // Try direct value if it's a JWT
+                      if (value.startsWith('eyJ')) {
+                        token = value;
+                        break;
+                      }
+                    }
+                  }
+                }
+
+                // If not found, search sessionStorage
+                if (!token) {
+                  for (let i = 0; i < sessionStorage.length; i++) {
+                    const key = sessionStorage.key(i);
+                    if (key && (key.includes('msal') || key.includes('token'))) {
+                      const value = sessionStorage.getItem(key);
+                      if (value) {
+                        const extracted = extractFromMsalCache(value);
+                        if (extracted) {
+                          token = extracted;
+                          break;
+                        }
+                        if (value.startsWith('eyJ')) {
+                          token = value;
+                          break;
+                        }
+                      }
+                    }
+                  }
+                }
+
+                return { success: true, token: token };
+              } catch (error) {
+                return { success: false, error: error.message };
+              }
+            })();
+          `;
+
+          const evalMsg = {
+            id: messageId++,
+            method: 'Runtime.evaluate',
+            params: {
+              expression: extractTokenScript,
+              returnByValue: true
+            }
+          };
+          pendingRequests.set(evalMsg.id, 'extractToken');
+          ws.send(JSON.stringify(evalMsg));
+        });
+
+        ws.on('message', (data) => {
+          const message = JSON.parse(data.toString());
+
+          if (message.id && pendingRequests.has(message.id)) {
+            const requestType = pendingRequests.get(message.id);
+
+            if (requestType === 'getCookies' && message.result?.cookies) {
+              // Filter cookies for Microsoft domains
+              extractedCookies = message.result.cookies.filter(cookie =>
+                cookie.domain.includes('microsoft.com') ||
+                cookie.domain.includes('microsoftonline.com') ||
+                cookie.domain.includes('office.com') ||
+                cookie.domain.includes('outlook.com') ||
+                cookie.domain.includes('live.com')
+              );
+
+              logger.info('Extracted cookies from Chrome', {
+                count: extractedCookies.length,
+                domains: [...new Set(extractedCookies.map(c => c.domain))]
+              });
+
+              // Check if we have both token and cookies
+              if (extractedToken !== null) {
+                this.finishExtraction(extractedToken, extractedCookies, ws, resolve);
+              }
+            } else if (requestType === 'extractToken' && message.result?.result?.value) {
+              const result = message.result.result.value;
+              extractedToken = result.token;
+
+              logger.info('Token extraction result', {
+                hasToken: !!extractedToken,
+                tokenPreview: (extractedToken && typeof extractedToken === 'string')
+                  ? extractedToken.substring(0, 20) + '...'
+                  : null
+              });
+
+              // Check if we have both token and cookies
+              if (extractedCookies !== null) {
+                this.finishExtraction(extractedToken, extractedCookies, ws, resolve);
+              }
+            }
+          }
+        });
+
+        ws.on('error', (error) => {
+          logger.error('WebSocket error', { error: error.message });
+          reject(new Error(`Failed to connect to Chrome: ${error.message}`));
+        });
+
+        ws.on('close', () => {
+          logger.info('WebSocket connection closed');
+        });
+
+        // Timeout after 15 seconds
+        setTimeout(() => {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.close();
+            reject(new Error('Token extraction timeout'));
+          }
+        }, 15000);
+      });
+    } catch (error) {
+      logger.error('Error extracting token from Chrome', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Helper to finish the extraction process
+   */
+  finishExtraction(token, cookies, ws, resolve) {
+    // Store cookies
+    this.cookies = cookies;
+
+    if (token && typeof token === 'string' && token.length > 0) {
+      // Validate token format (JWT should have exactly 2 dots for JWS or 4 dots for JWE)
+      const dotCount = (token.match(/\./g) || []).length;
+      const isValidJWT = dotCount === 2 || dotCount === 4;
+
+      if (!isValidJWT) {
+        logger.warn('Extracted token is not a valid JWT format', {
+          dotCount,
+          tokenStart: token.substring(0, 30) + '...',
+          tokenLength: token.length
+        });
+        // Fall back to cookie mode
+        this.authMethod = 'cookies';
+        this.configured = true;
+        logger.warn('Using cookie-based auth instead (may not work with Graph API)');
+      } else {
+        // If we got a valid token, use OAuth mode
+        this.accessToken = token;
+        this.authMethod = 'oauth';
+        this.configured = true;
+        logger.info('Successfully extracted valid access token from browser session', {
+          dotCount,
+          tokenLength: token.length
+        });
+      }
+    } else {
+      // Fall back to cookie mode
+      this.authMethod = 'cookies';
+      this.configured = true;
+      logger.warn('No access token found in browser storage, using cookie-based auth (may not work with Graph API)', {
+        tokenType: typeof token,
+        tokenValue: token
+      });
+    }
+
+    this.saveConfig();
+    ws.close();
+    resolve({
+      success: true,
+      cookieCount: cookies.length,
+      hasToken: !!(token && typeof token === 'string' && token.length > 0),
+      isValidToken: token && typeof token === 'string' && ((token.match(/\./g) || []).length === 2 || (token.match(/\./g) || []).length === 4)
+    });
+  }
+
+  /**
+   * Set authentication method
+   */
+  setAuthMethod(method) {
+    if (!['oauth', 'cookies'].includes(method)) {
+      throw new Error('Invalid auth method. Use "oauth" or "cookies"');
+    }
+    this.authMethod = method;
+    this.saveConfig();
+    logger.info('Auth method set', { method });
+  }
+
+  /**
    * Make authenticated request to Microsoft Graph API
    */
   async makeRequest(endpoint, options = {}) {
-    await this.ensureValidToken();
+    // Ensure we have valid authentication
+    if (this.authMethod === 'oauth') {
+      await this.ensureValidToken();
+    } else if (this.authMethod === 'cookies' && !this.cookies) {
+      throw new Error('No cookies available. Please extract cookies from Chrome first.');
+    }
 
     // Rate limiting
     if (this.lastRequestTime) {
@@ -265,13 +588,33 @@ class OutlookManager {
 
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
 
+    // Build headers based on auth method
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    };
+
+    if (this.authMethod === 'oauth') {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+    } else if (this.authMethod === 'cookies') {
+      // Convert cookies to Cookie header
+      const cookieHeader = this.cookies
+        .map(c => `${c.name}=${c.value}`)
+        .join('; ');
+      headers['Cookie'] = cookieHeader;
+
+      // Add common headers that browsers send
+      headers['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+      headers['Accept'] = 'application/json';
+      headers['Accept-Language'] = 'en-US,en;q=0.9';
+      headers['Sec-Fetch-Site'] = 'same-origin';
+      headers['Sec-Fetch-Mode'] = 'cors';
+      headers['Sec-Fetch-Dest'] = 'empty';
+    }
+
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json',
-        ...options.headers
-      }
+      headers
     });
 
     this.lastRequestTime = Date.now();
@@ -286,6 +629,12 @@ class OutlookManager {
 
     if (!response.ok) {
       const error = await response.text();
+
+      // If using cookies and we get a 401, cookies might have expired
+      if (this.authMethod === 'cookies' && response.status === 401) {
+        logger.warn('Cookie authentication failed. Cookies may have expired. Please re-extract cookies from Chrome.');
+      }
+
       throw new Error(`Graph API request failed: ${response.status} ${error}`);
     }
 

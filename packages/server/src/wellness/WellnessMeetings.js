@@ -374,7 +374,8 @@ Once you share these, I can provide personalized guidance for your day!`;
   async getJiraStatsForToday() {
     let jiraManager;
     try {
-      jiraManager = require('../integrations/JiraManager.js').default;
+      const jiraModule = await import('../integrations/JiraManager.js');
+      jiraManager = jiraModule.default;
 
       // Check if Jira is configured
       if (!jiraManager.configured) {

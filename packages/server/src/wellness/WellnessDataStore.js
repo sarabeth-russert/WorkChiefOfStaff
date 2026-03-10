@@ -103,13 +103,15 @@ class WellnessDataStore {
       const filePath = this.getFilePath(date);
 
       if (!fs.existsSync(filePath)) {
-        logger.info('No wellness data found for date', { date });
+        // Only log at debug level for routine "not found" cases
+        logger.debug('No wellness data found for date', { date });
         return null;
       }
 
       const fileContent = fs.readFileSync(filePath, 'utf8');
       const data = JSON.parse(fileContent);
-      logger.info('Retrieved daily wellness metrics', { date });
+      // Only log at debug level for routine data retrieval
+      logger.debug('Retrieved daily wellness metrics', { date });
 
       return data;
     } catch (error) {
@@ -129,20 +131,22 @@ class WellnessDataStore {
         throw new Error('Invalid date format. Expected YYYY-MM-DD');
       }
 
-      const start = new Date(startDate);
-      const end = new Date(endDate);
       const results = [];
+      const currentDate = new Date(startDate + 'T00:00:00Z');
+      const lastDate = new Date(endDate + 'T00:00:00Z');
 
-      // Iterate through date range
-      for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
-        const dateStr = date.toISOString().split('T')[0];
+      // Iterate through date range using string manipulation to avoid timezone issues
+      while (currentDate <= lastDate) {
+        const dateStr = currentDate.toISOString().split('T')[0];
         const metrics = await this.getDailyMetrics(dateStr);
         if (metrics) {
           results.push(metrics);
         }
+        // Add 1 day using UTC methods to avoid DST issues
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
       }
 
-      logger.info('Retrieved wellness metrics range', { startDate, endDate, count: results.length });
+      logger.debug('Retrieved wellness metrics range', { startDate, endDate, count: results.length });
       return results;
     } catch (error) {
       logger.error('Error retrieving wellness metrics range', { startDate, endDate, error: error.message });
@@ -663,7 +667,7 @@ class WellnessDataStore {
           date: data.date
         })));
 
-      logger.info('Retrieved wellness sessions range', {
+      logger.debug('Retrieved wellness sessions range', {
         startDate,
         endDate,
         count: sessions.length
