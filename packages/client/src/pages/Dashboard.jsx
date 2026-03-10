@@ -7,6 +7,7 @@ const Dashboard = () => {
   const [wellnessSource, setWellnessSource] = useState(null); // 'oura' or 'self-reported'
   const [todayEvents, setTodayEvents] = useState(null);
   const [activeTickets, setActiveTickets] = useState(null);
+  const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
@@ -17,22 +18,56 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch wellness data
-      const wellnessResponse = await fetch(`${apiUrl}/api/wellness/daily`).catch(() => null);
-      if (wellnessResponse?.ok) {
-        const wellnessData = await wellnessResponse.json();
+      // Fetch weather
+      const weatherResponse = await fetch(`${apiUrl}/api/weather/simple`).catch(() => null);
+      if (weatherResponse?.ok) {
+        const weatherData = await weatherResponse.json();
+        setWeather(weatherData.forecast);
+      }
 
-        // Try Oura readiness score first (nested under metrics.metrics)
+      // Fetch wellness data - try today first, then fall back to yesterday if no data
+      let wellnessData = null;
+      let dataDate = 'today';
+
+      const todayResponse = await fetch(`${apiUrl}/api/wellness/daily`).catch(() => null);
+      if (todayResponse?.ok) {
+        const data = await todayResponse.json();
+        console.log('[Oura Data] Today\'s wellness data received:', data);
+
+        if (data.metrics && Object.keys(data.metrics).length > 0) {
+          wellnessData = data;
+        } else {
+          // No data for today yet, try yesterday
+          console.log('[Oura Data] No data for today, fetching yesterday\'s data...');
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+          const yesterdayResponse = await fetch(`${apiUrl}/api/wellness/daily/${yesterdayStr}`).catch(() => null);
+          if (yesterdayResponse?.ok) {
+            const yesterdayData = await yesterdayResponse.json();
+            console.log('[Oura Data] Yesterday\'s wellness data received:', yesterdayData);
+            if (yesterdayData.metrics) {
+              wellnessData = yesterdayData;
+              dataDate = 'yesterday';
+            }
+          }
+        }
+      }
+
+      if (wellnessData) {
+        // Try Oura readiness score first (correct path: metrics.metrics.readiness.data[0].score)
         if (wellnessData.metrics?.metrics?.readiness?.data?.[0]?.score) {
+          console.log('[Oura Data] Readiness score found:', wellnessData.metrics.metrics.readiness.data[0]);
           setWellnessScore(wellnessData.metrics.metrics.readiness.data[0].score);
-          setWellnessSource('oura');
+          setWellnessSource(dataDate === 'yesterday' ? 'oura (yesterday)' : 'oura');
         }
         // Fallback to self-reported score from morning standup
         else if (wellnessData.metrics?.sessions) {
-          const todayStandups = wellnessData.metrics.sessions.filter(s => s.type === 'standup' && s.status === 'completed');
-          if (todayStandups.length > 0) {
+          const standups = wellnessData.metrics.sessions.filter(s => s.type === 'standup' && s.status === 'completed');
+          if (standups.length > 0) {
             // Get most recent completed standup
-            const latestStandup = todayStandups[todayStandups.length - 1];
+            const latestStandup = standups[standups.length - 1];
             // Look for self-reported readiness score in conversation
             const readinessMsg = latestStandup.conversation?.find(msg =>
               msg.role === 'user' && /readiness[:\s]+(\d+)/i.test(msg.content)
@@ -41,7 +76,7 @@ const Dashboard = () => {
               const match = readinessMsg.content.match(/readiness[:\s]+(\d+)/i);
               if (match) {
                 setWellnessScore(parseInt(match[1]));
-                setWellnessSource('self-reported');
+                setWellnessSource(dataDate === 'yesterday' ? 'self-reported (yesterday)' : 'self-reported');
               }
             }
           }
@@ -80,7 +115,7 @@ const Dashboard = () => {
           Welcome to Adventureland
         </h1>
         <p className="text-xl text-vintage-text opacity-80 max-w-2xl mx-auto">
-          Your command center for productivity, wellness, and expedition planning
+          {loading ? 'Loading weather...' : weather || 'Weather unavailable'}
         </p>
       </div>
 

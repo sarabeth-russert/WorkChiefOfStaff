@@ -1,9 +1,51 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import Button from '../ui/Button';
 import useWellnessStore from '../../stores/wellnessStore';
 
 const NotificationBanner = ({ notification, onDismiss, onStartBreathing }) => {
   const startSession = useWellnessStore((state) => state.startSession);
+  const previousNotificationId = useRef(null);
+
+  // Play notification sound when a new notification appears
+  useEffect(() => {
+    if (notification && notification.id !== previousNotificationId.current) {
+      previousNotificationId.current = notification.id;
+      playNotificationSound();
+    }
+  }, [notification]);
+
+  const playNotificationSound = () => {
+    try {
+      // Create a simple pleasant notification sound using Web Audio API
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+      // Create a gentle two-tone chime
+      const playTone = (frequency, startTime, duration) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+
+        oscillator.frequency.value = frequency;
+        oscillator.type = 'sine';
+
+        // Envelope for smooth attack and decay
+        gainNode.gain.setValueAtTime(0, startTime);
+        gainNode.gain.linearRampToValueAtTime(0.3, startTime + 0.05); // Attack
+        gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // Decay
+
+        oscillator.start(startTime);
+        oscillator.stop(startTime + duration);
+      };
+
+      const now = audioContext.currentTime;
+      playTone(800, now, 0.15); // First tone - higher
+      playTone(600, now + 0.1, 0.2); // Second tone - lower, slightly delayed
+    } catch (error) {
+      console.error('Error playing notification sound:', error);
+    }
+  };
 
   if (!notification) return null;
 

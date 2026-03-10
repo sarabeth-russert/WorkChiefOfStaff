@@ -19,12 +19,15 @@ async function detectAndScheduleNotification(message) {
   let modifiedMessage = message;
 
   // Pattern 0: Multiple times in one request
-  // "schedule notifications for 8am, 9am, and 10am to X" or "remind me to X at 8am, 9am, and 10am"
-  let multiTimeMatch = message.match(/(?:remind me to|schedule (?:some )?(?:notifications?|reminders?)(?: to)?)\s+(.+?)\s+(?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)/i);
+  // Matches:
+  //   - "remind me to X at 8am, 9am, and 10am"
+  //   - "schedule notifications for 8am, 9am, and 10am to X"
+  //   - "set a reminder notification for me at 9:45AM and at 1:25PM to do X"
+  let multiTimeMatch = message.match(/(?:remind me to|schedule (?:some )?(?:notifications?|reminders?)(?: to)?|set (?:a )?(?:reminder|notification)s?(?: (?:notification|reminder))?(?: for me)?)\s+(.+?)\s+(?:for|at)\s+((?:at\s+)?[\d\w:,\s]+(?:am|pm)?(?:\s*,?\s*(?:and\s+)?(?:at\s+)?[\d\w:]+(?:am|pm)?)*)/i);
 
   // Also try pattern: "schedule notifications for [times] to [message]"
   if (!multiTimeMatch) {
-    multiTimeMatch = message.match(/(?:schedule (?:some )?(?:notifications?|reminders?)|remind me)\s+(?:for|at)\s+([\d\w:,\s]+(?:am|pm)?(?:\s*,\s*[\d\w:]+(?:am|pm)?)*(?:\s+and\s+[\d\w:]+(?:am|pm)?)?)\s+(?:to|for)\s+(.+)/i);
+    multiTimeMatch = message.match(/(?:schedule (?:some )?(?:notifications?|reminders?)|remind me|set (?:a )?(?:reminder|notification)s?(?: for me)?)\s+(?:for|at)\s+((?:at\s+)?[\d\w:,\s]+(?:am|pm)?(?:\s*,?\s*(?:and\s+)?(?:at\s+)?[\d\w:]+(?:am|pm)?)*)\s+(?:to|for)\s+(.+)/i);
     if (multiTimeMatch) {
       // Swap order - times are in [1], message is in [2]
       multiTimeMatch = [multiTimeMatch[0], multiTimeMatch[2], multiTimeMatch[1]];
@@ -36,8 +39,11 @@ async function detectAndScheduleNotification(message) {
     const timesStr = multiTimeMatch[2];
 
     try {
-      // Split on commas and "and"
-      const timeStrings = timesStr.split(/[,\s]+and\s+|,\s*/).map(t => t.trim()).filter(t => t);
+      // Split on commas and "and", also remove "at" prefix from each time
+      const timeStrings = timesStr
+        .split(/[,\s]+and\s+|,\s*/)
+        .map(t => t.trim().replace(/^at\s+/i, ''))
+        .filter(t => t);
 
       for (const timeStr of timeStrings) {
         const time = parseTimeString(timeStr);
@@ -740,6 +746,30 @@ router.get('/jira/me', async (req, res) => {
   }
 });
 
+// Get user's Jira metrics (open tickets and story points)
+router.get('/jira/metrics', async (req, res) => {
+  try {
+    const { projectKey = 'CONTECH' } = req.query;
+    const metrics = await jiraManager.getUserMetrics(projectKey);
+    res.json(metrics);
+  } catch (error) {
+    logger.error('Error fetching Jira metrics', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get tickets closed on a specific date
+router.get('/jira/metrics/closed-on-date', async (req, res) => {
+  try {
+    const { projectKey = 'CONTECH', date } = req.query;
+    const metrics = await jiraManager.getClosedOnDate(projectKey, date);
+    res.json(metrics);
+  } catch (error) {
+    logger.error('Error fetching closed tickets', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Wellness routes
 import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from '../wellness/WellnessDataStore.js';
@@ -1333,7 +1363,10 @@ router.get('/outlook/status', (req, res) => {
   try {
     res.json({
       configured: outlookManager.isConfigured(),
+      authMethod: outlookManager.authMethod,
       hasToken: !!outlookManager.accessToken,
+      hasCookies: !!outlookManager.cookies,
+      cookieCount: outlookManager.cookies?.length || 0,
       expiresAt: outlookManager.expiresAt
     });
   } catch (error) {
@@ -1428,6 +1461,283 @@ router.post('/outlook/disconnect', (req, res) => {
     });
   } catch (error) {
     logger.error('Error disconnecting Outlook', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Chrome cookie extraction for Outlook
+router.post('/outlook/extract-cookies', async (req, res) => {
+  try {
+    const { port } = req.body;
+    const chromePort = port || 9222;
+
+    const result = await outlookManager.extractCookiesFromChrome(chromePort);
+
+    res.json({
+      success: true,
+      message: 'Cookies extracted successfully from Chrome',
+      cookieCount: result.cookieCount
+    });
+  } catch (error) {
+    logger.error('Error extracting cookies from Chrome', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: 'Make sure Chrome is running with: chrome --remote-debugging-port=9222'
+    });
+  }
+});
+
+// Set authentication method
+router.post('/outlook/auth-method', (req, res) => {
+  try {
+    const { method } = req.body;
+
+    if (!method || !['oauth', 'cookies'].includes(method)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid auth method. Use "oauth" or "cookies"'
+      });
+    }
+
+    outlookManager.setAuthMethod(method);
+
+    res.json({
+      success: true,
+      message: `Auth method set to ${method}`,
+      authMethod: method
+    });
+  } catch (error) {
+    logger.error('Error setting auth method', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Playwright-based Outlook Integration
+import outlookPlaywright from '../integrations/OutlookPlaywright.js';
+
+router.post('/outlook/playwright/initialize', async (req, res) => {
+  try {
+    const result = await outlookPlaywright.initialize();
+    res.json({
+      success: true,
+      message: 'Playwright browser initialized. Check the browser window to log in to Outlook.'
+    });
+  } catch (error) {
+    logger.error('Error initializing Playwright', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/playwright/status', async (req, res) => {
+  try {
+    const isConfigured = outlookPlaywright.isConfigured();
+
+    if (isConfigured) {
+      const loginStatus = await outlookPlaywright.ensureLoggedIn();
+      res.json({
+        configured: true,
+        needsLogin: loginStatus.needsLogin,
+        message: loginStatus.message
+      });
+    } else {
+      res.json({
+        configured: false,
+        needsLogin: true,
+        message: 'Browser not initialized. Call /api/outlook/playwright/initialize first.'
+      });
+    }
+  } catch (error) {
+    logger.error('Error checking Playwright status', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/playwright/events/today', async (req, res) => {
+  try {
+    const events = await outlookPlaywright.getTodayEvents();
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching today events with Playwright', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/playwright/events/week', async (req, res) => {
+  try {
+    const events = await outlookPlaywright.getWeekEvents();
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching week events with Playwright', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/playwright/events', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: startDate and endDate'
+      });
+    }
+
+    const events = await outlookPlaywright.getCalendarEvents(startDate, endDate);
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching calendar events with Playwright', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/outlook/playwright/close', async (req, res) => {
+  try {
+    await outlookPlaywright.close();
+    res.json({
+      success: true,
+      message: 'Playwright browser closed'
+    });
+  } catch (error) {
+    logger.error('Error closing Playwright browser', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Connected Browser Approach (Recommended by Boss)
+import outlookBrowser from '../integrations/OutlookBrowser.js';
+
+router.post('/outlook/browser/connect', async (req, res) => {
+  try {
+    const { cdpUrl } = req.body;
+    const result = await outlookBrowser.connect(cdpUrl || 'http://localhost:9222');
+    res.json({
+      success: true,
+      message: 'Connected to browser successfully',
+      ...result
+    });
+  } catch (error) {
+    logger.error('Error connecting to browser', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      hint: 'Make sure Chrome is running with: chrome --remote-debugging-port=9222'
+    });
+  }
+});
+
+router.get('/outlook/browser/status', (req, res) => {
+  try {
+    const status = outlookBrowser.getStatus();
+    res.json(status);
+  } catch (error) {
+    logger.error('Error checking browser status', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/browser/events/today', async (req, res) => {
+  try {
+    const events = await outlookBrowser.getTodayEvents();
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching today events via browser', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/browser/events/week', async (req, res) => {
+  try {
+    const events = await outlookBrowser.getWeekEvents();
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching week events via browser', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/outlook/browser/events', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required parameters: startDate and endDate'
+      });
+    }
+
+    const events = await outlookBrowser.getCalendarEvents(startDate, endDate);
+    res.json({
+      success: true,
+      events,
+      count: events.length
+    });
+  } catch (error) {
+    logger.error('Error fetching calendar events via browser', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/outlook/browser/disconnect', async (req, res) => {
+  try {
+    await outlookBrowser.disconnect();
+    res.json({
+      success: true,
+      message: 'Disconnected from browser (browser stays running)'
+    });
+  } catch (error) {
+    logger.error('Error disconnecting from browser', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Weather routes
+import weatherManager from '../integrations/WeatherManager.js';
+
+router.get('/weather/forecast', async (req, res) => {
+  try {
+    const forecast = await weatherManager.getForecast();
+    res.json({
+      success: true,
+      forecast
+    });
+  } catch (error) {
+    logger.error('Error fetching weather forecast', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.get('/weather/simple', async (req, res) => {
+  try {
+    const forecast = await weatherManager.getSimpleForecast();
+    res.json({
+      success: true,
+      forecast
+    });
+  } catch (error) {
+    logger.error('Error fetching simple weather forecast', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
