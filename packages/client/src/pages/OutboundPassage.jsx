@@ -32,7 +32,7 @@ const OutboundPassage = () => {
         setIsLoading(false);
       }
     } catch (err) {
-      console.error('Error checking Outlook status:', err);
+      // Outlook status check failed; UI shows unconfigured state
       setIsLoading(false);
     }
   };
@@ -50,7 +50,7 @@ const OutboundPassage = () => {
       const data = await response.json();
       setEvents(data.events || []);
     } catch (err) {
-      console.error('Error fetching calendar events:', err);
+      // Error displayed in UI via setError
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -66,7 +66,7 @@ const OutboundPassage = () => {
         window.location.href = data.authUrl;
       }
     } catch (err) {
-      console.error('Error connecting Outlook:', err);
+      // Error displayed in UI via setError
       setError('Failed to connect to Outlook');
     }
   };

@@ -14,22 +14,18 @@ const useAgentStore = create((set, get) => {
 
   // Socket event handlers
   socket.on('connect', () => {
-    console.log('Socket connected:', socket.id);
     set({ connected: true });
   });
 
   socket.on('disconnect', () => {
-    console.log('Socket disconnected');
     set({ connected: false });
   });
 
   socket.on('agent:task:started', (data) => {
-    console.log('Task started:', data);
     set({ isProcessing: true, currentTaskId: data.taskId });
   });
 
   socket.on('agent:task:chunk', (data) => {
-    console.log('Task chunk:', data);
     const { currentResponse } = get();
     set({
       currentResponse: currentResponse + data.chunk,
@@ -38,7 +34,6 @@ const useAgentStore = create((set, get) => {
   });
 
   socket.on('agent:task:response', (data) => {
-    console.log('Task response:', data);
     set({
       currentResponse: data.response,
       currentAgent: data.agentType
@@ -46,7 +41,6 @@ const useAgentStore = create((set, get) => {
   });
 
   socket.on('agent:task:completed', (data) => {
-    console.log('Task completed:', data);
     const { tasks, conversationHistory } = get();
 
     // Update conversation history for this agent
@@ -73,7 +67,6 @@ const useAgentStore = create((set, get) => {
   });
 
   socket.on('agent:task:error', (data) => {
-    console.error('Task error:', data);
     set({
       isProcessing: false,
       error: data.error

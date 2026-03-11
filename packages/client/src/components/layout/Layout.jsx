@@ -18,18 +18,12 @@ const Layout = () => {
     }
   };
 
-  const handleStartBreathing = () => {
-    // TODO: Navigate to breathing exercise or trigger it
-    console.log('Starting breathing exercise...');
-  };
-
   return (
     <div className="min-h-screen bg-cream paper-texture">
       <Navigation />
       <NotificationBanner
         notification={notification}
         onDismiss={handleDismiss}
-        onStartBreathing={handleStartBreathing}
       />
       <main className={`container mx-auto px-6 py-8 ${notification ? 'mt-24' : ''}`}>
         <Outlet />

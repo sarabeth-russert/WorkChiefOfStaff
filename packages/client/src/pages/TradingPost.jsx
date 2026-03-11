@@ -41,7 +41,7 @@ const TradingPost = () => {
     try {
       await startApp(appId);
     } catch (error) {
-      console.error('Error starting app:', error);
+      // Error handled by store
     }
   };
 
@@ -49,7 +49,7 @@ const TradingPost = () => {
     try {
       await stopApp(appId);
     } catch (error) {
-      console.error('Error stopping app:', error);
+      // Error handled by store
     }
   };
 
@@ -57,7 +57,7 @@ const TradingPost = () => {
     try {
       await restartApp(appId);
     } catch (error) {
-      console.error('Error restarting app:', error);
+      // Error handled by store
     }
   };
 
@@ -72,7 +72,7 @@ const TradingPost = () => {
       await registerApp(appData);
       setShowAddModal(false);
     } catch (error) {
-      console.error('Error registering app:', error);
+      // Error handled by store
     }
   };
 
@@ -81,7 +81,7 @@ const TradingPost = () => {
       try {
         await deleteApp(appId);
       } catch (error) {
-        console.error('Error deleting app:', error);
+        // Error handled by store
       }
     }
   };

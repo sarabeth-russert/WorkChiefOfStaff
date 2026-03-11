@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const useConfigStore = create((set, get) => ({
   // State
@@ -44,7 +44,7 @@ const useConfigStore = create((set, get) => ({
         set({ providerTypes: result.data });
       }
     } catch (error) {
-      console.error('Failed to fetch provider types:', error);
+      // Non-critical; silently fail
     }
   },
 
@@ -107,7 +107,7 @@ const useConfigStore = create((set, get) => ({
 
       return result.success && result.data.valid;
     } catch (error) {
-      console.error('Failed to validate provider:', error);
+      // Validation failed; return false
       return false;
     }
   },
@@ -138,7 +138,7 @@ const useConfigStore = create((set, get) => ({
         set({ currentModel: result.data.modelId });
       }
     } catch (error) {
-      console.error('Failed to fetch current model:', error);
+      // Non-critical; silently fail
     }
   },
 
@@ -195,7 +195,7 @@ const useConfigStore = create((set, get) => ({
       }
       return null;
     } catch (error) {
-      console.error('Failed to fetch prompt:', error);
+      // Non-critical; silently fail
       return null;
     }
   },
@@ -238,7 +238,7 @@ const useConfigStore = create((set, get) => ({
       }
       return null;
     } catch (error) {
-      console.error('Failed to export prompt:', error);
+      // Export failed; return null
       return null;
     }
   },

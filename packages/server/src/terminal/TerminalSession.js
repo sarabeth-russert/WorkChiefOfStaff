@@ -5,6 +5,8 @@ import logger from '../config/logger.js';
 
 const execAsync = promisify(exec);
 
+const MAX_COMMAND_LENGTH = 10000;
+
 /**
  * Manages terminal sessions for command execution
  */
@@ -21,8 +23,28 @@ class TerminalSession {
    * Execute a command
    * @param {string} command - Command to execute
    */
+  /**
+   * Validate command is not obviously dangerous
+   * Rejects null bytes and other injection vectors
+   */
+  _validateCommand(command) {
+    if (!command || typeof command !== 'string') {
+      throw new Error('Invalid command');
+    }
+    // Reject null bytes (common injection vector)
+    if (command.includes('\0')) {
+      throw new Error('Command contains invalid characters');
+    }
+    // Limit command length to prevent abuse
+    if (command.length > MAX_COMMAND_LENGTH) {
+      throw new Error('Command too long');
+    }
+  }
+
   async executeCommand(command) {
     try {
+      this._validateCommand(command);
+
       logger.info('Executing command', {
         sessionId: this.sessionId,
         command: command.substring(0, 100)

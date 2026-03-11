@@ -34,7 +34,7 @@ const BaseCamp = () => {
         setSessionHistory(sortedSessions);
       }
     } catch (err) {
-      console.error('Error fetching session history:', err);
+      // Session history fetch failed; UI shows empty state
     } finally {
       setIsLoadingHistory(false);
     }
@@ -98,7 +98,6 @@ const BaseCamp = () => {
         alert('Failed to trigger standup: ' + (result.error || 'Unknown error'));
       }
     } catch (err) {
-      console.error('Error triggering standup:', err);
       alert('Error triggering standup: ' + err.message);
     }
   };
@@ -120,7 +119,6 @@ const BaseCamp = () => {
         alert('Failed to trigger retro: ' + (result.error || 'Unknown error'));
       }
     } catch (err) {
-      console.error('Error triggering retro:', err);
       alert('Error triggering retro: ' + err.message);
     }
   };

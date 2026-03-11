@@ -1,28 +1,11 @@
 import React from 'react';
 import { Card } from '../ui';
+import { getContributorColor, SLEEP_LABELS } from '../../utils/wellness';
 
 const SleepContributors = ({ contributors }) => {
   if (!contributors) return null;
 
-  const getContributorColor = (score) => {
-    if (score >= 85) return 'bg-green-500';
-    if (score >= 70) return 'bg-blue-500';
-    if (score >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getContributorLabel = (key) => {
-    const labels = {
-      deep_sleep: 'Deep Sleep',
-      efficiency: 'Efficiency',
-      latency: 'Latency',
-      rem_sleep: 'REM Sleep',
-      restfulness: 'Restfulness',
-      timing: 'Timing',
-      total_sleep: 'Total Sleep'
-    };
-    return labels[key] || key;
-  };
+  const getContributorLabel = (key) => SLEEP_LABELS[key] || key;
 
   const contributorEntries = Object.entries(contributors).sort((a, b) => b[1] - a[1]);
 

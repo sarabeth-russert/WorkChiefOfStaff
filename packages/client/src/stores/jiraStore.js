@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const useJiraStore = create((set, get) => ({
   // State

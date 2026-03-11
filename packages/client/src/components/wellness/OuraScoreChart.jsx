@@ -71,4 +71,4 @@ const OuraScoreChart = ({ data, title }) => {
   );
 };
 
-export default OuraScoreChart;
+export default React.memo(OuraScoreChart);

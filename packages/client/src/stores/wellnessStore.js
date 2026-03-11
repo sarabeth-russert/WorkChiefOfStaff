@@ -16,7 +16,6 @@ const useWellnessStore = create((set, get) => {
 
   // Socket event handlers for wellness events
   socket.on('wellness:standup', (data) => {
-    console.log('[Oura Data] Wellness standup notification:', data);
 
     // Only show notification if we haven't completed a standup today
     const date = data.date || new Date().toISOString().split('T')[0];
@@ -37,7 +36,6 @@ const useWellnessStore = create((set, get) => {
   });
 
   socket.on('wellness:retro', (data) => {
-    console.log('[Oura Data] Wellness retro notification:', data);
 
     // Only show notification if we haven't completed a retro today
     const date = data.date || new Date().toISOString().split('T')[0];
@@ -58,7 +56,6 @@ const useWellnessStore = create((set, get) => {
   });
 
   socket.on('wellness:stress-alert', (data) => {
-    console.log('[Oura Data] Wellness stress alert (Oura heart rate detected elevated stress):', data);
     get().addNotification({
       id: `stress-${Date.now()}`,
       type: 'stress-alert',
@@ -72,7 +69,6 @@ const useWellnessStore = create((set, get) => {
 
   // Scheduled notifications from NotificationScheduler
   socket.on('wellness:notification', (data) => {
-    console.log('[Oura Data] Scheduled wellness notification:', data);
     get().addNotification({
       id: data.id || `notification-${Date.now()}`,
       type: data.type || 'scheduled',
@@ -140,21 +136,6 @@ const useWellnessStore = create((set, get) => {
         const response = await fetch(`${API_URL}/api/wellness/daily${queryParam}`);
         const data = await response.json();
 
-        console.log('[Oura Data] Daily metrics fetched:', data);
-
-        if (data.metrics?.metrics?.readiness) {
-          console.log('[Oura Data] Readiness data:', data.metrics.metrics.readiness);
-        }
-        if (data.metrics?.metrics?.sleep) {
-          console.log('[Oura Data] Sleep data:', data.metrics.metrics.sleep);
-        }
-        if (data.metrics?.metrics?.activity) {
-          console.log('[Oura Data] Activity data:', data.metrics.metrics.activity);
-        }
-        if (data.metrics?.metrics?.heartRate) {
-          console.log('[Oura Data] Heart rate data points:', data.metrics.metrics.heartRate?.data?.length || 0);
-        }
-
         set({ dailyMetrics: data.metrics || null, loading: false });
         return data;
       } catch (error) {
@@ -203,17 +184,14 @@ const useWellnessStore = create((set, get) => {
     },
 
     refreshData: async () => {
-      console.log('[Oura Data] Refreshing wellness data from Oura Ring...');
       set({ loading: true, error: null });
       try {
         await Promise.all([
           get().fetchDailyMetrics(),
           get().fetchTrends()
         ]);
-        console.log('[Oura Data] Wellness data refresh complete');
         set({ loading: false });
       } catch (error) {
-        console.error('[Oura Data] Error refreshing wellness data:', error);
         set({ error: error.message, loading: false });
         throw error;
       }

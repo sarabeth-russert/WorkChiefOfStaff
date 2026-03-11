@@ -1,83 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '../ui';
 import MessageBubble from './MessageBubble';
+import { SESSION_TYPE_CONFIG } from '../../utils/wellness';
 
 const SessionJournalEntry = ({
   session
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [jiraMetrics, setJiraMetrics] = useState(null);
-  const [loadingMetrics, setLoadingMetrics] = useState(false);
-
-  const apiUrl = import.meta.env.VITE_API_URL || '';
-
-  // Fetch Jira metrics
-  useEffect(() => {
-    const fetchMetrics = async () => {
-      try {
-        setLoadingMetrics(true);
-
-        if (session.type === 'standup') {
-          // For standup: Get current in progress tickets
-          const response = await fetch(`${apiUrl}/api/jira/metrics`).catch(() => null);
-          if (response?.ok) {
-            const data = await response.json();
-            setJiraMetrics(data);
-          }
-        } else if (session.type === 'retro') {
-          // For retro: Get tickets closed on the session date and current in progress
-          // Extract date from session startedAt
-          const sessionDate = session.startedAt ? new Date(session.startedAt).toISOString().split('T')[0] : null;
-
-          const [closedResponse, inProgressResponse] = await Promise.all([
-            fetch(`${apiUrl}/api/jira/metrics/closed-on-date${sessionDate ? `?date=${sessionDate}` : ''}`).catch(() => null),
-            fetch(`${apiUrl}/api/jira/metrics`).catch(() => null)
-          ]);
-
-          if (closedResponse?.ok && inProgressResponse?.ok) {
-            const closedData = await closedResponse.json();
-            const inProgressData = await inProgressResponse.json();
-            setJiraMetrics({
-              ...closedData,
-              ...inProgressData
-            });
-          } else if (closedResponse?.ok) {
-            // If only closed data is available
-            const closedData = await closedResponse.json();
-            setJiraMetrics(closedData);
-          } else if (inProgressResponse?.ok) {
-            // If only in progress data is available
-            const inProgressData = await inProgressResponse.json();
-            setJiraMetrics(inProgressData);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching Jira metrics:', error);
-        // Silently fail - metrics are optional
-      } finally {
-        setLoadingMetrics(false);
-      }
-    };
-
-    fetchMetrics();
-  }, [session.type, session.startedAt]);
+  // Use Jira metrics captured at session creation time
+  const jiraMetrics = session.jiraMetrics || null;
 
   if (!session) return null;
 
-  const sessionTypeConfig = {
-    standup: {
-      icon: '🌅',
-      label: 'Morning Standup',
-      color: 'text-sunset'
-    },
-    retro: {
-      icon: '🌙',
-      label: 'Evening Retro',
-      color: 'text-teal'
-    }
-  };
-
-  const config = sessionTypeConfig[session.type] || sessionTypeConfig.standup;
+  const config = SESSION_TYPE_CONFIG[session.type] || SESSION_TYPE_CONFIG.standup;
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -169,13 +104,16 @@ const SessionJournalEntry = ({
             <p className="text-xs text-vintage-text opacity-60 font-ui">
               {formatDate(session.startedAt)}
             </p>
-            {/* Jira Metrics in Header */}
-            {!loadingMetrics && jiraMetrics && (
+            {/* Jira Metrics in Header (captured at session time) */}
+            {jiraMetrics && (
               <div className="mt-2 flex gap-4 text-xs font-ui">
                 {session.type === 'standup' && (
                   <div className="flex items-center gap-1 text-jungle">
                     <span className="font-poster">🎫</span>
-                    <span className="opacity-80">{jiraMetrics.inProgressTickets || 0} in progress</span>
+                    <span className="opacity-80">
+                      {jiraMetrics.inProgressTickets || 0} in progress
+                      {jiraMetrics.totalPoints ? ` (${jiraMetrics.totalPoints} pts)` : ''}
+                    </span>
                   </div>
                 )}
                 {session.type === 'retro' && (

@@ -91,11 +91,23 @@ const Navigation = () => {
               const hasActiveItem = group.items.some(item => location.pathname === item.path);
 
               return (
-                <div key={key} className="relative">
+                <div
+                  key={key}
+                  className="relative"
+                  onMouseEnter={() => setOpenDropdown(key)}
+                  onMouseLeave={() => setOpenDropdown(null)}
+                >
                   <button
                     onClick={() => toggleDropdown(key)}
-                    onMouseEnter={() => setOpenDropdown(key)}
-                    onMouseLeave={() => setOpenDropdown(null)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setOpenDropdown(null);
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        setOpenDropdown(key);
+                      }
+                    }}
+                    aria-expanded={isOpen}
+                    aria-haspopup="true"
                     className={`
                       px-4 py-2 font-ui uppercase tracking-wide text-sm
                       transition-all duration-150 border-2 rounded whitespace-nowrap
@@ -114,8 +126,7 @@ const Navigation = () => {
                   {isOpen && (
                     <div
                       className="absolute top-full right-0 bg-cream border-4 border-jungle-dark shadow-vintage-strong rounded-lg overflow-hidden z-50 min-w-[240px]"
-                      onMouseEnter={() => setOpenDropdown(key)}
-                      onMouseLeave={() => setOpenDropdown(null)}
+                      role="menu"
                     >
                       {group.items.map((item) => {
                         const isActive = location.pathname === item.path;

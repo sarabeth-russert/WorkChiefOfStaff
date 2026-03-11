@@ -3,9 +3,12 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import logger from '../config/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+const DEFAULT_STRESS_THRESHOLD = 7;
 
 /**
  * WellnessScheduler manages automated wellness tasks using cron jobs
@@ -38,14 +41,14 @@ class WellnessScheduler {
       this.settings = JSON.parse(data);
       return this.settings;
     } catch (error) {
-      console.error('Failed to load wellness settings:', error);
+      logger.error('Failed to load wellness settings:', error);
       // Return default settings if file doesn't exist
       this.settings = {
         standupTime: '08:30',
         retroTime: '18:00',
         stressCheckStartHour: 9,
         stressCheckEndHour: 18,
-        stressThreshold: 7,
+        stressThreshold: DEFAULT_STRESS_THRESHOLD,
         timezone: 'America/New_York',
         enabled: true
       };
@@ -63,7 +66,7 @@ class WellnessScheduler {
       await fs.writeFile(settingsPath, JSON.stringify(this.settings, null, 2));
       return this.settings;
     } catch (error) {
-      console.error('Failed to save wellness settings:', error);
+      logger.error('Failed to save wellness settings:', error);
       throw error;
     }
   }
@@ -107,7 +110,7 @@ class WellnessScheduler {
    */
   startStandupJob() {
     if (!this.settings) {
-      console.error('Settings not loaded. Call loadSettings() first.');
+      logger.error('Settings not loaded. Call loadSettings() first.');
       return false;
     }
 
@@ -116,12 +119,12 @@ class WellnessScheduler {
     this.jobs.standup = cron.schedule(
       cronExpression,
       async () => {
-        console.log(`[WellnessScheduler] Daily standup triggered at ${new Date().toISOString()}`);
+        logger.info(`[WellnessScheduler] Daily standup triggered at ${new Date().toISOString()}`);
         if (this.callbacks.onStandup) {
           try {
             await this.callbacks.onStandup();
           } catch (error) {
-            console.error('Error in standup callback:', error);
+            logger.error('Error in standup callback:', error);
           }
         }
       },
@@ -131,7 +134,7 @@ class WellnessScheduler {
       }
     );
 
-    console.log(`[WellnessScheduler] Standup scheduled for ${this.settings.standupTime} (${this.settings.timezone})`);
+    logger.info(`[WellnessScheduler] Standup scheduled for ${this.settings.standupTime} (${this.settings.timezone})`);
     return true;
   }
 
@@ -140,7 +143,7 @@ class WellnessScheduler {
    */
   startRetroJob() {
     if (!this.settings) {
-      console.error('Settings not loaded. Call loadSettings() first.');
+      logger.error('Settings not loaded. Call loadSettings() first.');
       return false;
     }
 
@@ -149,12 +152,12 @@ class WellnessScheduler {
     this.jobs.retro = cron.schedule(
       cronExpression,
       async () => {
-        console.log(`[WellnessScheduler] Daily retro triggered at ${new Date().toISOString()}`);
+        logger.info(`[WellnessScheduler] Daily retro triggered at ${new Date().toISOString()}`);
         if (this.callbacks.onRetro) {
           try {
             await this.callbacks.onRetro();
           } catch (error) {
-            console.error('Error in retro callback:', error);
+            logger.error('Error in retro callback:', error);
           }
         }
       },
@@ -164,7 +167,7 @@ class WellnessScheduler {
       }
     );
 
-    console.log(`[WellnessScheduler] Retro scheduled for ${this.settings.retroTime} (${this.settings.timezone})`);
+    logger.info(`[WellnessScheduler] Retro scheduled for ${this.settings.retroTime} (${this.settings.timezone})`);
     return true;
   }
 
@@ -173,7 +176,7 @@ class WellnessScheduler {
    */
   startStressCheckJob() {
     if (!this.settings) {
-      console.error('Settings not loaded. Call loadSettings() first.');
+      logger.error('Settings not loaded. Call loadSettings() first.');
       return false;
     }
 
@@ -185,12 +188,12 @@ class WellnessScheduler {
     this.jobs.stressCheck = cron.schedule(
       cronExpression,
       async () => {
-        console.log(`[WellnessScheduler] Stress check triggered at ${new Date().toISOString()}`);
+        logger.info(`[WellnessScheduler] Stress check triggered at ${new Date().toISOString()}`);
         if (this.callbacks.onStressCheck) {
           try {
             await this.callbacks.onStressCheck(this.settings.stressThreshold);
           } catch (error) {
-            console.error('Error in stress check callback:', error);
+            logger.error('Error in stress check callback:', error);
           }
         }
       },
@@ -200,7 +203,7 @@ class WellnessScheduler {
       }
     );
 
-    console.log(`[WellnessScheduler] Stress checks scheduled hourly from ${this.settings.stressCheckStartHour}:00 to ${this.settings.stressCheckEndHour}:00 (${this.settings.timezone})`);
+    logger.info(`[WellnessScheduler] Stress checks scheduled hourly from ${this.settings.stressCheckStartHour}:00 to ${this.settings.stressCheckEndHour}:00 (${this.settings.timezone})`);
     return true;
   }
 
@@ -209,7 +212,7 @@ class WellnessScheduler {
    */
   startOuraSyncJob() {
     if (!this.settings) {
-      console.error('Settings not loaded. Call loadSettings() first.');
+      logger.error('Settings not loaded. Call loadSettings() first.');
       return false;
     }
 
@@ -219,12 +222,12 @@ class WellnessScheduler {
     this.jobs.ouraSync = cron.schedule(
       cronExpression,
       async () => {
-        console.log(`[WellnessScheduler] Oura data sync triggered at ${new Date().toISOString()}`);
+        logger.info(`[WellnessScheduler] Oura data sync triggered at ${new Date().toISOString()}`);
         if (this.callbacks.onOuraSync) {
           try {
             await this.callbacks.onOuraSync();
           } catch (error) {
-            console.error('Error in Oura sync callback:', error);
+            logger.error('Error in Oura sync callback:', error);
           }
         }
       },
@@ -234,7 +237,7 @@ class WellnessScheduler {
       }
     );
 
-    console.log(`[WellnessScheduler] Oura data sync scheduled hourly (${this.settings.timezone})`);
+    logger.info(`[WellnessScheduler] Oura data sync scheduled hourly (${this.settings.timezone})`);
     return true;
   }
 
@@ -245,7 +248,7 @@ class WellnessScheduler {
     await this.loadSettings();
 
     if (!this.settings.enabled) {
-      console.log('[WellnessScheduler] Wellness scheduling is disabled in settings');
+      logger.info('[WellnessScheduler] Wellness scheduling is disabled in settings');
       return false;
     }
 
@@ -261,7 +264,7 @@ class WellnessScheduler {
     if (this.jobs.stressCheck) this.jobs.stressCheck.start();
     if (this.jobs.ouraSync) this.jobs.ouraSync.start();
 
-    console.log('[WellnessScheduler] All wellness jobs started successfully');
+    logger.info('[WellnessScheduler] All wellness jobs started successfully');
     return true;
   }
 
@@ -288,7 +291,7 @@ class WellnessScheduler {
       stoppedCount++;
     }
 
-    console.log(`[WellnessScheduler] Stopped ${stoppedCount} wellness jobs`);
+    logger.info(`[WellnessScheduler] Stopped ${stoppedCount} wellness jobs`);
     return stoppedCount;
   }
 
@@ -298,7 +301,7 @@ class WellnessScheduler {
   async restart() {
     this.stop();
     await this.start();
-    console.log('[WellnessScheduler] Jobs restarted with new settings');
+    logger.info('[WellnessScheduler] Jobs restarted with new settings');
   }
 
   /**
@@ -320,22 +323,22 @@ class WellnessScheduler {
       settings: this.settings,
       jobs: {
         standup: {
-          active: this.jobs.standup ? true : false,
+          active: !!this.jobs.standup,
           schedule: this.settings ? this.timeToCron(this.settings.standupTime) : null
         },
         retro: {
-          active: this.jobs.retro ? true : false,
+          active: !!this.jobs.retro,
           schedule: this.settings ? this.timeToCron(this.settings.retroTime) : null
         },
         stressCheck: {
-          active: this.jobs.stressCheck ? true : false,
+          active: !!this.jobs.stressCheck,
           schedule: this.settings ? this.hourlyRangeCron(
             this.settings.stressCheckStartHour,
             this.settings.stressCheckEndHour
           ) : null
         },
         ouraSync: {
-          active: this.jobs.ouraSync ? true : false,
+          active: !!this.jobs.ouraSync,
           schedule: '0 * * * *' // Every hour at the top of the hour
         }
       }
@@ -361,7 +364,7 @@ class WellnessScheduler {
         break;
       case 'stressCheck':
         if (this.callbacks.onStressCheck) {
-          await this.callbacks.onStressCheck(this.settings?.stressThreshold || 7);
+          await this.callbacks.onStressCheck(this.settings?.stressThreshold || DEFAULT_STRESS_THRESHOLD);
           return true;
         }
         break;

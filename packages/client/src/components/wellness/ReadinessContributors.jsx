@@ -1,30 +1,11 @@
 import React from 'react';
 import { Card } from '../ui';
+import { getContributorColor, READINESS_LABELS } from '../../utils/wellness';
 
 const ReadinessContributors = ({ contributors }) => {
   if (!contributors) return null;
 
-  const getContributorColor = (score) => {
-    if (score >= 85) return 'bg-green-500';
-    if (score >= 70) return 'bg-blue-500';
-    if (score >= 50) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getContributorLabel = (key) => {
-    const labels = {
-      activity_balance: 'Activity Balance',
-      body_temperature: 'Body Temperature',
-      hrv_balance: 'HRV Balance',
-      previous_day_activity: 'Previous Day Activity',
-      previous_night: 'Previous Night',
-      recovery_index: 'Recovery Index',
-      resting_heart_rate: 'Resting Heart Rate',
-      sleep_balance: 'Sleep Balance',
-      sleep_regularity: 'Sleep Regularity'
-    };
-    return labels[key] || key;
-  };
+  const getContributorLabel = (key) => READINESS_LABELS[key] || key;
 
   const contributorEntries = Object.entries(contributors).sort((a, b) => b[1] - a[1]);
 

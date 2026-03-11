@@ -9,6 +9,8 @@ import config from '../config/env.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const MAX_DECISIONS = 1000;
+
 /**
  * Orchestrates multiple agents and manages task execution
  */
@@ -46,9 +48,8 @@ class AgentOrchestrator {
     try {
       this.decisions.push(decision);
 
-      // Keep only last 1000 decisions
-      if (this.decisions.length > 1000) {
-        this.decisions = this.decisions.slice(-1000);
+      if (this.decisions.length > MAX_DECISIONS) {
+        this.decisions = this.decisions.slice(-MAX_DECISIONS);
       }
 
       fs.writeFileSync(

@@ -32,13 +32,10 @@ const Dashboard = () => {
       const todayResponse = await fetch(`${apiUrl}/api/wellness/daily`).catch(() => null);
       if (todayResponse?.ok) {
         const data = await todayResponse.json();
-        console.log('[Oura Data] Today\'s wellness data received:', data);
-
         if (data.metrics && Object.keys(data.metrics).length > 0) {
           wellnessData = data;
         } else {
           // No data for today yet, try yesterday
-          console.log('[Oura Data] No data for today, fetching yesterday\'s data...');
           const yesterday = new Date();
           yesterday.setDate(yesterday.getDate() - 1);
           const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -46,7 +43,6 @@ const Dashboard = () => {
           const yesterdayResponse = await fetch(`${apiUrl}/api/wellness/daily/${yesterdayStr}`).catch(() => null);
           if (yesterdayResponse?.ok) {
             const yesterdayData = await yesterdayResponse.json();
-            console.log('[Oura Data] Yesterday\'s wellness data received:', yesterdayData);
             if (yesterdayData.metrics) {
               wellnessData = yesterdayData;
               dataDate = 'yesterday';
@@ -58,7 +54,6 @@ const Dashboard = () => {
       if (wellnessData) {
         // Try Oura readiness score first (correct path: metrics.metrics.readiness.data[0].score)
         if (wellnessData.metrics?.metrics?.readiness?.data?.[0]?.score) {
-          console.log('[Oura Data] Readiness score found:', wellnessData.metrics.metrics.readiness.data[0]);
           setWellnessScore(wellnessData.metrics.metrics.readiness.data[0].score);
           setWellnessSource(dataDate === 'yesterday' ? 'oura (yesterday)' : 'oura');
         }
@@ -101,7 +96,7 @@ const Dashboard = () => {
         setActiveTickets(inProgress);
       }
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      // Dashboard data fetch failed; UI shows default state
     } finally {
       setLoading(false);
     }

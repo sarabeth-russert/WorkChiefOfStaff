@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const useAppStore = create((set, get) => ({
   // State
@@ -136,7 +136,7 @@ const useAppStore = create((set, get) => ({
       const data = await response.json();
       set({ systemStats: data });
     } catch (error) {
-      console.error('Error fetching system stats:', error);
+      // System stats are optional; silently ignore fetch failures
     }
   },
 

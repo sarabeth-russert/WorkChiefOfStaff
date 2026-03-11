@@ -555,7 +555,7 @@ class JiraManager {
         jql,
         maxResults,
         startAt,
-        fields: 'summary,status,assignee,priority,created,updated,issuetype,description'
+        fields: 'summary,status,assignee,priority,created,updated,issuetype,description,customfield_10106'
       });
 
       const data = await this.makeRequest(`/search?${params}`);

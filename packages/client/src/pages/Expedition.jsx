@@ -23,7 +23,7 @@ const Expedition = () => {
 
   useEffect(() => {
     // Fetch available agents from server
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     fetch(`${apiUrl}/api/agents`)
       .then(res => res.json())
       .then(data => {
@@ -33,7 +33,7 @@ const Expedition = () => {
         }
       })
       .catch(err => {
-        console.error('Error fetching agents:', err);
+        // Fetch failed; fall back to hardcoded agent
         // Fallback to hardcoded Explorer agent if fetch fails
         const explorerAgent = {
           name: 'Explorer',

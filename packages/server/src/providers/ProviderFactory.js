@@ -20,7 +20,7 @@ class ProviderFactory {
    * @returns {AIProvider} Provider instance
    */
   createProvider(type, config = {}) {
-    console.log('🔧 ProviderFactory.createProvider called with type:', type);
+    logger.info('🔧 ProviderFactory.createProvider called with type:', type);
     let provider;
 
     switch (type) {
@@ -33,7 +33,7 @@ class ProviderFactory {
         break;
 
       case 'claude-cli':
-        console.log('🎯 Creating ClaudeCliProvider');
+        logger.info('🎯 Creating ClaudeCliProvider');
         provider = new ClaudeCliProvider(config);
         break;
 
@@ -44,7 +44,7 @@ class ProviderFactory {
     // Store provider instance
     this.providers.set(type, provider);
 
-    console.log('✅ Provider created:', provider.name, '(type:', provider.type, ')');
+    logger.info('✅ Provider created:', provider.name, '(type:', provider.type, ')');
     logger.info('Provider created', {
       type,
       name: provider.name
@@ -111,6 +111,13 @@ class ProviderFactory {
         description: 'Direct Anthropic API access',
         requiresCredentials: true,
         credentialFields: ['apiKey']
+      },
+      {
+        type: 'claude-cli',
+        name: 'Claude CLI',
+        description: 'Claude CLI for local development',
+        requiresCredentials: false,
+        credentialFields: []
       }
     ];
   }

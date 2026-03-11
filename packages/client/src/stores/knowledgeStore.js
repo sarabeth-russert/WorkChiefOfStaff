@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const useKnowledgeStore = create((set, get) => ({
   // State
@@ -30,7 +30,7 @@ const useKnowledgeStore = create((set, get) => ({
       const data = await response.json();
       set({ stats: data });
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      // Stats fetch is non-critical; silently fail
     }
   },
 

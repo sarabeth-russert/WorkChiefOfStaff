@@ -43,7 +43,7 @@ const MapRoom = () => {
       await addItem(itemData);
       setShowAddForm(false);
     } catch (error) {
-      console.error('Error adding item:', error);
+      // Error handled by store
     }
   };
 
@@ -52,7 +52,7 @@ const MapRoom = () => {
       try {
         await deleteItem(itemId);
       } catch (error) {
-        console.error('Error deleting item:', error);
+        // Error handled by store
       }
     }
   };

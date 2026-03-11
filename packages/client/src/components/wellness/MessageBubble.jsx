@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatMarkdown } from '../../utils/markdown';
 
 const MessageBubble = ({
   role = 'assistant',
@@ -14,47 +15,6 @@ const MessageBubble = ({
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
-    });
-  };
-
-  const renderMarkdownContent = (text) => {
-    if (!text) return null;
-
-    // Split by paragraphs
-    const paragraphs = text.split(/\n\n+/);
-
-    return paragraphs.map((para, idx) => {
-      // Check for bold **text**
-      let processed = para.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      // Check for italic *text*
-      processed = processed.replace(/\*(.+?)\*/g, '<em>$1</em>');
-      // Check for bullet points
-      const isBullet = para.trim().startsWith('- ') || para.trim().startsWith('* ');
-
-      if (isBullet) {
-        const items = para.split('\n').filter(line => line.trim());
-        return (
-          <ul key={idx} className="list-disc list-inside mb-2 space-y-1">
-            {items.map((item, i) => (
-              <li
-                key={i}
-                className="text-sm"
-                dangerouslySetInnerHTML={{
-                  __html: item.replace(/^[-*]\s+/, '').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                }}
-              />
-            ))}
-          </ul>
-        );
-      }
-
-      return (
-        <p
-          key={idx}
-          className="mb-2 last:mb-0"
-          dangerouslySetInnerHTML={{ __html: processed }}
-        />
-      );
     });
   };
 
@@ -79,9 +39,10 @@ const MessageBubble = ({
               }
             `}
           >
-            <div className="text-sm font-serif">
-              {renderMarkdownContent(content)}
-            </div>
+            <div
+              className="text-sm font-serif"
+              dangerouslySetInnerHTML={{ __html: formatMarkdown(content) }}
+            />
           </div>
 
           {timestamp && (

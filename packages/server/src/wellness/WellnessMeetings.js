@@ -3,11 +3,32 @@ import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
 import fs from 'fs/promises';
+import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const DEFAULT_TIMEZONE = 'America/Los_Angeles';
+const SETTINGS_PATH = path.join(__dirname, '../../data/wellness/settings.json');
+
+/**
+ * Format a Date object as YYYY-MM-DD in the given timezone
+ */
+function formatDateInTimezone(date, timezone) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find(p => p.type === 'year').value;
+  const month = parts.find(p => p.type === 'month').value;
+  const day = parts.find(p => p.type === 'day').value;
+  return `${year}-${month}-${day}`;
+}
 
 /**
  * WellnessMeetings manages wellness check-ins and meetings
@@ -16,6 +37,8 @@ const __dirname = path.dirname(__filename);
 class WellnessMeetings {
   constructor(io = null) {
     this.io = io;
+    this._cachedTimezone = null;
+    this._timezoneCacheTime = 0;
   }
 
   /**
@@ -31,13 +54,31 @@ class WellnessMeetings {
    */
   async loadSettings() {
     try {
-      const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
-      const data = await fs.readFile(settingsPath, 'utf-8');
+      const data = await fs.readFile(SETTINGS_PATH, 'utf-8');
       return JSON.parse(data);
     } catch (error) {
       logger.warn('[WellnessMeetings] Could not load settings, using defaults', { error: error.message });
-      return { timezone: 'America/Los_Angeles' };
+      return { timezone: DEFAULT_TIMEZONE };
     }
+  }
+
+  /**
+   * Get cached timezone from settings (reloads every 60s)
+   */
+  _getTimezone() {
+    const now = Date.now();
+    if (this._cachedTimezone && now - this._timezoneCacheTime < 60000) {
+      return this._cachedTimezone;
+    }
+    try {
+      const data = readFileSync(SETTINGS_PATH, 'utf-8');
+      const settings = JSON.parse(data);
+      this._cachedTimezone = settings.timezone || DEFAULT_TIMEZONE;
+    } catch {
+      this._cachedTimezone = DEFAULT_TIMEZONE;
+    }
+    this._timezoneCacheTime = now;
+    return this._cachedTimezone;
   }
 
   /**
@@ -45,37 +86,9 @@ class WellnessMeetings {
    */
   getTodayDate() {
     try {
-      // Load settings synchronously (cached after first load)
-      let timezone = 'America/Los_Angeles';
-      try {
-        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
-        const data = require('fs').readFileSync(settingsPath, 'utf-8');
-        const settings = JSON.parse(data);
-        timezone = settings.timezone || timezone;
-      } catch (e) {
-        // Use default timezone if settings can't be loaded
-      }
-
-      // Use Intl.DateTimeFormat for reliable timezone conversion
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-
-      const parts = formatter.formatToParts(new Date());
-      const year = parts.find(p => p.type === 'year').value;
-      const month = parts.find(p => p.type === 'month').value;
-      const day = parts.find(p => p.type === 'day').value;
-
-      return `${year}-${month}-${day}`;
+      return formatDateInTimezone(new Date(), this._getTimezone());
     } catch (error) {
-      logger.error('[WellnessMeetings] Error getting today date', {
-        error: error.message,
-        stack: error.stack
-      });
-      // Fallback to UTC if timezone conversion fails
+      logger.error('[WellnessMeetings] Error getting today date', { error: error.message });
       return new Date().toISOString().split('T')[0];
     }
   }
@@ -85,40 +98,11 @@ class WellnessMeetings {
    */
   getYesterdayDate() {
     try {
-      // Load settings synchronously (cached after first load)
-      let timezone = 'America/Los_Angeles';
-      try {
-        const settingsPath = path.join(__dirname, '../../data/wellness/settings.json');
-        const data = require('fs').readFileSync(settingsPath, 'utf-8');
-        const settings = JSON.parse(data);
-        timezone = settings.timezone || timezone;
-      } catch (e) {
-        // Use default timezone if settings can't be loaded
-      }
-
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-
-      // Use Intl.DateTimeFormat for reliable timezone conversion
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-      });
-
-      const parts = formatter.formatToParts(yesterday);
-      const year = parts.find(p => p.type === 'year').value;
-      const month = parts.find(p => p.type === 'month').value;
-      const day = parts.find(p => p.type === 'day').value;
-
-      return `${year}-${month}-${day}`;
+      return formatDateInTimezone(yesterday, this._getTimezone());
     } catch (error) {
-      logger.error('[WellnessMeetings] Error getting yesterday date', {
-        error: error.message,
-        stack: error.stack
-      });
-      // Fallback to UTC if timezone conversion fails
+      logger.error('[WellnessMeetings] Error getting yesterday date', { error: error.message });
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       return yesterday.toISOString().split('T')[0];
@@ -310,6 +294,9 @@ ${yesterdayNotes}
 
 Once you share these, I can provide personalized guidance for your day!`;
 
+      // Capture Jira metrics at standup time
+      const jiraMetrics = await this.getJiraInProgressMetrics();
+
       // Create session with prompt (without calling Guide agent yet)
       const sessionData = {
         type: 'standup',
@@ -323,7 +310,8 @@ Once you share these, I can provide personalized guidance for your day!`;
         ],
         status: 'active',
         startedAt: new Date().toISOString(),
-        awaitingScores: true // Flag to indicate we need user's scores first
+        awaitingScores: true, // Flag to indicate we need user's scores first
+        jiraMetrics: jiraMetrics || null
       };
 
       const session = await wellnessDataStore.saveSession(today, sessionData);
@@ -368,8 +356,35 @@ Once you share these, I can provide personalized guidance for your day!`;
   }
 
   /**
+   * Fetch current Jira in-progress metrics (ticket count and story points)
+   * Used to snapshot work state at meeting time
+   */
+  async getJiraInProgressMetrics() {
+    let jiraManager;
+    try {
+      const jiraModule = await import('../integrations/JiraManager.js');
+      jiraManager = jiraModule.default;
+
+      if (!jiraManager.configured) {
+        return null;
+      }
+
+      const metrics = await jiraManager.getUserMetrics();
+      return {
+        inProgressTickets: metrics.inProgressTickets || 0,
+        totalPoints: metrics.totalPoints || 0
+      };
+    } catch (error) {
+      logger.warn('[WellnessMeetings] Could not fetch in-progress Jira metrics', {
+        error: error.message
+      });
+      return null;
+    }
+  }
+
+  /**
    * Fetch Jira statistics for today
-   * Returns story points added and closed
+   * Returns story points added, closed, and current in-progress count
    */
   async getJiraStatsForToday() {
     let jiraManager;
@@ -389,19 +404,16 @@ Once you share these, I can provide personalized guidance for your day!`;
       // JQL to find issues moved to Done today assigned to current user
       const closedTodayJQL = 'status changed to Done DURING (startOfDay(0d), endOfDay(0d)) AND assignee = currentUser()';
 
-      const [createdResults, closedResults] = await Promise.all([
+      const [createdResults, closedResults, inProgressMetrics] = await Promise.all([
         jiraManager.searchIssues(createdTodayJQL, { maxResults: 100 }),
-        jiraManager.searchIssues(closedTodayJQL, { maxResults: 100 })
+        jiraManager.searchIssues(closedTodayJQL, { maxResults: 100 }),
+        jiraManager.getUserMetrics()
       ]);
 
       // Sum story points (checking common field names)
       const sumStoryPoints = (issues) => {
         return issues.reduce((sum, issue) => {
-          const storyPoints =
-            issue.fields?.customfield_10016 || // Common story points field
-            issue.fields?.storyPoints ||
-            issue.fields?.['Story Points'] ||
-            0;
+          const storyPoints = issue.fields?.customfield_10106 || 0;
           return sum + (parseFloat(storyPoints) || 0);
         }, 0);
       };
@@ -411,14 +423,17 @@ Once you share these, I can provide personalized guidance for your day!`;
 
       logger.info('[WellnessMeetings] Fetched Jira stats', {
         issuesCreated: createdIssues.length,
-        issuesClosed: closedIssues.length
+        issuesClosed: closedIssues.length,
+        inProgress: inProgressMetrics?.inProgressTickets || 0
       });
 
       return {
         issuesCreated: createdIssues.length,
         storyPointsAdded: sumStoryPoints(createdIssues),
         issuesClosed: closedIssues.length,
-        storyPointsClosed: sumStoryPoints(closedIssues)
+        storyPointsClosed: sumStoryPoints(closedIssues),
+        inProgressTickets: inProgressMetrics?.inProgressTickets || 0,
+        inProgressPoints: inProgressMetrics?.totalPoints || 0
       };
     } catch (error) {
       logger.warn('[WellnessMeetings] Could not fetch Jira stats', {
@@ -572,6 +587,7 @@ Keep your response warm, supportive, and under 150 words. Focus on recovery and 
       const response = result.success ? result.response : 'Unable to generate wellness retro at this time.';
 
       // Create session with Guide's initial guidance
+      // jiraStats already includes inProgressTickets and inProgressPoints from getJiraStatsForToday()
       const retroSessionData = {
         type: 'retro',
         initialGuidance: response,
@@ -588,7 +604,13 @@ Keep your response warm, supportive, and under 150 words. Focus on recovery and 
           activity: activityData?.data?.[0]
         },
         morningPlan: morningPlan || null,
-        jiraStats: jiraStats || null
+        jiraStats: jiraStats || null,
+        jiraMetrics: jiraStats ? {
+          inProgressTickets: jiraStats.inProgressTickets,
+          inProgressPoints: jiraStats.inProgressPoints,
+          closedTickets: jiraStats.issuesClosed,
+          closedPoints: jiraStats.storyPointsClosed
+        } : null
       };
 
       const retroSession = await wellnessDataStore.saveSession(today, retroSessionData);

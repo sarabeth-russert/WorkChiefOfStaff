@@ -88,13 +88,24 @@ class KnowledgeStore {
     const item = this.items.find(i => i.id === itemId);
 
     if (item) {
-      // Update access tracking
+      // Update access tracking in memory; persist is deferred to next mutation
       item.accessCount++;
       item.lastAccessedAt = new Date().toISOString();
-      this.saveItems();
+      this._scheduleSave();
     }
 
     return item || null;
+  }
+
+  /**
+   * Debounced save - batches rapid access tracking writes
+   */
+  _scheduleSave() {
+    if (this._saveTimer) return;
+    this._saveTimer = setTimeout(() => {
+      this._saveTimer = null;
+      this.saveItems();
+    }, 5000);
   }
 
   /**

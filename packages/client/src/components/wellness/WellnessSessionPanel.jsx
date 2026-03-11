@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import useWellnessStore from '../../stores/wellnessStore';
 import Button from '../ui/Button';
 import MessageBubble from './MessageBubble';
+import { SESSION_TYPE_CONFIG } from '../../utils/wellness';
 
 const WellnessSessionPanel = () => {
   const {
@@ -45,24 +46,7 @@ const WellnessSessionPanel = () => {
   const isStandup = activeSession.type === 'standup';
   const isRetro = activeSession.type === 'retro';
 
-  const sessionTypeConfig = {
-    standup: {
-      icon: '🌅',
-      label: 'Morning Standup',
-      bgColor: 'bg-sunset',
-      borderColor: 'border-sunset-dark',
-      textColor: 'text-cream'
-    },
-    retro: {
-      icon: '🌙',
-      label: 'Evening Retro',
-      bgColor: 'bg-teal',
-      borderColor: 'border-teal-dark',
-      textColor: 'text-cream'
-    }
-  };
-
-  const config = sessionTypeConfig[activeSession.type] || sessionTypeConfig.standup;
+  const config = SESSION_TYPE_CONFIG[activeSession.type] || SESSION_TYPE_CONFIG.standup;
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
@@ -74,7 +58,7 @@ const WellnessSessionPanel = () => {
     try {
       await sendSessionMessage(message);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      // Message send failed; input is restored below
       // Restore message on error
       setMessageInput(message);
     }
@@ -106,7 +90,7 @@ const WellnessSessionPanel = () => {
     try {
       await completeSession(summary);
     } catch (error) {
-      console.error('Failed to complete session:', error);
+      // Session completion failed; alert shown below
       alert('Failed to complete session. Please try again.');
     }
   };
@@ -200,7 +184,7 @@ const WellnessSessionPanel = () => {
             <>
               {sessionMessages.map((message, idx) => (
                 <MessageBubble
-                  key={idx}
+                  key={message.timestamp || idx}
                   role={message.role}
                   content={message.content}
                   timestamp={message.timestamp}

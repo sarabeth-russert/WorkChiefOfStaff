@@ -37,15 +37,8 @@ const OuraSetup = ({ onComplete }) => {
     const storedState = sessionStorage.getItem('oura_oauth_state');
     const storedRedirectUri = sessionStorage.getItem('oura_redirect_uri');
 
-    console.log('OAuth Callback Debug:', {
-      urlState: state,
-      storedState: storedState,
-      storedRedirectUri: storedRedirectUri,
-      match: state === storedState
-    });
-
     if (state !== storedState) {
-      setError(`Invalid state parameter. Expected: ${storedState?.substring(0, 10)}..., Got: ${state?.substring(0, 10)}...`);
+      setError('Invalid OAuth state parameter. Please try the authorization again.');
       return;
     }
 
@@ -110,9 +103,6 @@ const OuraSetup = ({ onComplete }) => {
         sessionStorage.setItem('oura_oauth_state', data.state);
         sessionStorage.setItem('oura_redirect_uri', redirectUri);
         setAuthState(data.state);
-
-        console.log('Stored OAuth state:', data.state.substring(0, 10) + '...');
-        console.log('Redirect URI:', redirectUri);
 
         // Redirect to Oura authorization page
         window.location.href = data.authUrl;

@@ -83,4 +83,4 @@ const WellnessTrendChart = ({ title, data = [], metricKey, scoreKey = 'score' })
   );
 };
 
-export default WellnessTrendChart;
+export default React.memo(WellnessTrendChart);

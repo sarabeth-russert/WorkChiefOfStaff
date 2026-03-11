@@ -51,7 +51,7 @@ const Medic = () => {
           }
         }
       } catch (err) {
-        console.error('Error triggering standup:', err);
+        // Non-critical background trigger; silently fail
       }
     };
 
@@ -71,21 +71,9 @@ const Medic = () => {
       }
 
       const data = await response.json();
-      console.log('[Oura Data] Medic page - Wellness data received:', data);
-
-      if (data.metrics?.metrics?.readiness) {
-        console.log('[Oura Data] Medic page - Readiness:', data.metrics.metrics.readiness);
-      }
-      if (data.metrics?.metrics?.sleep) {
-        console.log('[Oura Data] Medic page - Sleep:', data.metrics.metrics.sleep);
-      }
-      if (data.metrics?.metrics?.activity) {
-        console.log('[Oura Data] Medic page - Activity:', data.metrics.metrics.activity);
-      }
-
       setWellnessData(data);
     } catch (err) {
-      console.error('[Oura Data] Error fetching wellness data:', err);
+      // Error is displayed in the UI via setError
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -97,7 +85,6 @@ const Medic = () => {
       const response = await fetch(`${apiUrl}/api/wellness/trends?days=7`);
       if (response.ok) {
         const data = await response.json();
-        console.log('[Oura Data] Medic page - 7-day trend data received:', data.trends);
 
         // Transform trend data for charting
         const transformed = {};
@@ -127,11 +114,10 @@ const Medic = () => {
           new Date(a.date) - new Date(b.date)
         );
 
-        console.log('[Oura Data] Transformed chart data:', chartData);
         setTrendData(chartData);
       }
     } catch (err) {
-      console.error('[Oura Data] Error fetching trend data:', err);
+      // Trend data is non-critical; silently fail
     }
   };
 
@@ -143,16 +129,14 @@ const Medic = () => {
         setSettings(data);
       }
     } catch (err) {
-      console.error('Error fetching settings:', err);
+      // Settings fetch is non-critical; silently fail
     }
   };
 
   const handleRefresh = async () => {
-    console.log('[Oura Data] Manual refresh triggered on Medic page');
     setIsRefreshing(true);
     await fetchWellnessData();
     await fetchTrendData();
-    console.log('[Oura Data] Manual refresh complete on Medic page');
     setIsRefreshing(false);
   };
 
@@ -173,7 +157,7 @@ const Medic = () => {
       const data = await response.json();
       setSettings(data);
     } catch (err) {
-      console.error('Error saving settings:', err);
+      // Re-thrown below for caller to handle
       throw err;
     }
   };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card } from '../ui';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5554';
+const API_URL = import.meta.env.VITE_API_URL || '';
 
 const GitStatus = () => {
   const [status, setStatus] = useState(null);
@@ -43,7 +43,7 @@ const GitStatus = () => {
 
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching git info:', error);
+      // Git info fetch failed; UI shows loading state
       setLoading(false);
     }
   };

@@ -1,8 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import Button from '../ui/Button';
 import useWellnessStore from '../../stores/wellnessStore';
 
-const NotificationBanner = ({ notification, onDismiss, onStartBreathing }) => {
+const NotificationBanner = ({ notification, onDismiss }) => {
   const startSession = useWellnessStore((state) => state.startSession);
   const previousNotificationId = useRef(null);
 
@@ -43,7 +42,7 @@ const NotificationBanner = ({ notification, onDismiss, onStartBreathing }) => {
       playTone(800, now, 0.15); // First tone - higher
       playTone(600, now + 0.1, 0.2); // Second tone - lower, slightly delayed
     } catch (error) {
-      console.error('Error playing notification sound:', error);
+      // Web Audio API not available or blocked by browser
     }
   };
 
@@ -163,17 +162,6 @@ const NotificationBanner = ({ notification, onDismiss, onStartBreathing }) => {
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 flex-shrink-0">
-            {notification.type === 'stress' && onStartBreathing && (
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={onStartBreathing}
-                className="whitespace-nowrap"
-              >
-                Start Breathing Exercise
-              </Button>
-            )}
-
             {onDismiss && (
               <button
                 onClick={onDismiss}

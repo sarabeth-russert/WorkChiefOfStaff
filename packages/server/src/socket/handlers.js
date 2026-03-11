@@ -1,5 +1,4 @@
 import logger from '../config/logger.js';
-import agentFactory from '../agents/AgentFactory.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
 import TerminalSession from '../terminal/TerminalSession.js';
 
