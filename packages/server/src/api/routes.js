@@ -417,8 +417,21 @@ router.get('/apps/:id/logs', async (req, res) => {
 
 router.get('/system/stats', async (req, res) => {
   try {
-    const stats = await pm2Manager.getSystemStats();
-    res.json(stats);
+    const registeredApps = appRegistry.getAllApps();
+    const registeredNames = new Set(registeredApps.map(app => app.pm2Name));
+
+    // Scope stats to only registered apps (don't report on unrelated PM2 processes)
+    const allStats = await pm2Manager.getSystemStats();
+    const scopedProcesses = allStats.processes.filter(p => registeredNames.has(p.name));
+
+    res.json({
+      processCount: scopedProcesses.length,
+      runningCount: scopedProcesses.filter(p => p.status === 'online').length,
+      stoppedCount: scopedProcesses.filter(p => p.status === 'stopped').length,
+      totalCpu: scopedProcesses.reduce((sum, p) => sum + (p.cpu || 0), 0),
+      totalMemory: scopedProcesses.reduce((sum, p) => sum + (p.memory || 0), 0),
+      processes: scopedProcesses
+    });
   } catch (error) {
     logger.error('Error getting system stats', error);
     res.status(500).json({ error: 'Failed to get system stats' });

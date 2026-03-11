@@ -7,10 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pm2 start ecosystem.config.js && pm2 logs",
-    "stop": "pm2 stop all",
-    "restart": "pm2 restart all",
-    "delete": "pm2 delete all"
+    "dev": "pm2 start ecosystem.config.js && pm2 logs adventureland-server adventureland-client",
+    "stop": "pm2 stop adventureland-server adventureland-client",
+    "restart": "pm2 restart adventureland-server adventureland-client",
+    "delete": "pm2 delete adventureland-server adventureland-client"
   },
   "keywords": [
     "chief-of-staff",
