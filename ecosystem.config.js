@@ -27,7 +27,7 @@ module.exports = {
       interpreter: 'none',
       env: {
         NODE_ENV: 'development',
-        PORT: 5555
+        PORT: 5173
       },
       instances: 1,
       autorestart: true,
