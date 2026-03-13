@@ -3,6 +3,7 @@ import { Card, CheckIcon } from '../components/ui';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
 import HabitTracker from '../components/habits/HabitTracker';
+import QuickReminder from '../components/reminders/QuickReminder';
 
 const Dashboard = () => {
   const [briefing, setBriefing] = useState(null);
@@ -12,6 +13,7 @@ const Dashboard = () => {
   const [savingEvents, setSavingEvents] = useState(false);
   const [showEventInput, setShowEventInput] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
+  const [showQuickReminder, setShowQuickReminder] = useState(false);
   const [quickNote, setQuickNote] = useState({ title: '', content: '' });
   const [savingNote, setSavingNote] = useState(false);
   const [noteSaved, setNoteSaved] = useState(false);
@@ -539,6 +541,47 @@ const Dashboard = () => {
             />
           </Card>
 
+          {/* On Deck Today (Recurring Agenda) */}
+          {briefing?.agendaItems?.length > 0 && (
+            <Card variant="canvas" className="border-jungle">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <DashIcon src="/images/dashboard/agenda.png" alt="Agenda" fallback="&#x1F4CB;" size="w-24 h-24" />
+                  <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
+                    On Deck Today
+                  </h2>
+                </div>
+                <Link to="/outbound-passage">
+                  <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
+                    Manage
+                  </span>
+                </Link>
+              </div>
+              <div className="space-y-2">
+                {briefing.agendaItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-3 p-2 rounded-lg border-l-3 border-l-jungle bg-jungle bg-opacity-5"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-serif text-sm text-vintage-text font-bold">
+                        {item.name}
+                      </div>
+                      {item.notes && (
+                        <div className="text-xs font-serif text-vintage-text opacity-60 mt-0.5">
+                          {item.notes}
+                        </div>
+                      )}
+                      <div className="text-xs font-ui text-vintage-text opacity-40 mt-0.5 capitalize">
+                        {item.recurrence}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
           {/* Carry-Forward Notes */}
           {(lastRetro?.notesForTomorrow || todayPlan) && (
             <Card variant="canvas" className="border-mustard">
@@ -715,6 +758,34 @@ const Dashboard = () => {
                         </p>
                       </>
                     )}
+                  </div>
+                )}
+              </div>
+              <div>
+                <div
+                  onClick={() => setShowQuickReminder(!showQuickReminder)}
+                  className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer"
+                >
+                  <DashIcon src="/images/dashboard/reminder.png" alt="Reminder" fallback="&#x23F0;" size="w-20 h-20" />
+                  <div className="flex-1">
+                    <div className="font-ui uppercase text-sm text-vintage-text font-bold">
+                      Set Reminder
+                    </div>
+                    <div className="text-xs text-vintage-text opacity-60 font-serif">
+                      One-time, daily, or weekday alerts
+                    </div>
+                  </div>
+                  <Link
+                    to="/outbound-passage"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase flex-shrink-0"
+                  >
+                    Manage
+                  </Link>
+                </div>
+                {showQuickReminder && (
+                  <div className="mt-2 p-3 rounded-lg border-2 border-teal bg-teal bg-opacity-5">
+                    <QuickReminder apiUrl={apiUrl} onScheduled={() => setShowQuickReminder(false)} />
                   </div>
                 )}
               </div>

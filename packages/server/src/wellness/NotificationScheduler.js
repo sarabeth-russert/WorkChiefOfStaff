@@ -60,7 +60,8 @@ class NotificationScheduler {
       type = 'one-time',
       time,
       cronExpression,
-      endTime
+      endTime,
+      label
     } = options;
 
     const notificationId = `notif-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -72,6 +73,7 @@ class NotificationScheduler {
       time: time ? time.toISOString() : null,
       cronExpression,
       endTime: endTime ? endTime.toISOString() : null,
+      label: label || null,
       createdAt: new Date().toISOString(),
       status: 'active'
     };

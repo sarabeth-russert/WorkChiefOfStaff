@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 import agentFactory from '../agents/AgentFactory.js';
 import notificationScheduler from '../wellness/NotificationScheduler.js';
 import habitStore from '../habits/HabitStore.js';
+import agendaStore from '../habits/AgendaStore.js';
 
 const router = express.Router();
 
@@ -980,17 +981,50 @@ router.post('/wellness/sync', async (req, res) => {
 // Notification scheduler endpoints
 router.post('/wellness/notifications/schedule', async (req, res) => {
   try {
-    const { message, expression, fromTime, untilTime } = req.body;
+    const { message, expression, fromTime, untilTime, schedule, timeStr } = req.body;
 
     if (!message) {
       return res.status(400).json({ success: false, error: 'Message is required' });
     }
 
-    // Parse the time expression
     let notification;
 
-    if (expression) {
-      // Recurring notification
+    // New structured schedule mode (from reminder UI)
+    if (schedule && timeStr) {
+      const time = parseTimeString(timeStr);
+      if (!time) {
+        return res.status(400).json({ success: false, error: 'Could not parse time' });
+      }
+
+      const hour = time.getHours();
+      const minute = time.getMinutes();
+
+      if (schedule === 'once') {
+        notification = await notificationScheduler.scheduleNotification({
+          message,
+          type: 'one-time',
+          time,
+          label: `Once at ${timeStr}`,
+        });
+      } else if (schedule === 'daily') {
+        notification = await notificationScheduler.scheduleNotification({
+          message,
+          type: 'recurring',
+          cronExpression: `${minute} ${hour} * * *`,
+          label: `Daily at ${timeStr}`,
+        });
+      } else if (schedule === 'weekdays') {
+        notification = await notificationScheduler.scheduleNotification({
+          message,
+          type: 'recurring',
+          cronExpression: `${minute} ${hour} * * 1-5`,
+          label: `Weekdays at ${timeStr}`,
+        });
+      } else {
+        return res.status(400).json({ success: false, error: 'Invalid schedule type' });
+      }
+    } else if (expression) {
+      // Legacy: recurring via natural language expression
       const cronExpression = notificationScheduler.parseToCron(expression);
       const timeRange = notificationScheduler.parseTimeRange(fromTime, untilTime);
 
@@ -1001,7 +1035,7 @@ router.post('/wellness/notifications/schedule', async (req, res) => {
         endTime: timeRange.until ? new Date().setHours(timeRange.until.hour, timeRange.until.minute, 0, 0) : null
       });
     } else {
-      // One-time notification
+      // Legacy: one-time notification
       const targetTime = new Date(req.body.time);
       notification = await notificationScheduler.scheduleNotification({
         message,
@@ -1019,7 +1053,13 @@ router.post('/wellness/notifications/schedule', async (req, res) => {
 
 router.get('/wellness/notifications', async (req, res) => {
   try {
-    const notifications = await notificationScheduler.getActiveNotifications();
+    const all = req.query.all === 'true';
+    let notifications;
+    if (all) {
+      notifications = await notificationScheduler.loadNotifications();
+    } else {
+      notifications = await notificationScheduler.getActiveNotifications();
+    }
     res.json({ success: true, notifications });
   } catch (error) {
     logger.error('Error getting notifications', error);
@@ -2102,6 +2142,17 @@ router.get('/briefing', async (req, res) => {
     logger.debug('Error loading habits for briefing', { error: err.message });
   }
 
+  // Recurring agenda items for today
+  try {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const agendaItems = agendaStore.getItemsForDate(todayStr);
+    if (agendaItems.length > 0) {
+      briefing.agendaItems = agendaItems;
+    }
+  } catch (err) {
+    logger.debug('Error loading agenda for briefing', { error: err.message });
+  }
+
   res.json({ success: true, briefing });
 });
 
@@ -2207,6 +2258,86 @@ router.get('/habits/week/:endDate?', (req, res) => {
     res.json({ success: true, habits: config.habits, days });
   } catch (error) {
     logger.error('Error getting habit week summary', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== Recurring Agenda ====================
+
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+// Get all agenda items
+router.get('/agenda', (req, res) => {
+  try {
+    const items = agendaStore.getItems();
+    res.json({ success: true, items });
+  } catch (error) {
+    logger.error('Error getting agenda items', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get agenda items for today (or a specific date)
+router.get('/agenda/today/:date?', (req, res) => {
+  try {
+    const date = req.params.date || new Date().toISOString().split('T')[0];
+    const items = agendaStore.getItemsForDate(date);
+    res.json({ success: true, items, date });
+  } catch (error) {
+    logger.error('Error getting today agenda', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add an agenda item
+router.post('/agenda', (req, res) => {
+  try {
+    const { name, recurrence, dayOfWeek, startDate, notes } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Name is required' });
+    }
+    if (!['weekly', 'biweekly'].includes(recurrence)) {
+      return res.status(400).json({ success: false, error: 'Recurrence must be weekly or biweekly' });
+    }
+    if (dayOfWeek == null || dayOfWeek < 0 || dayOfWeek > 6) {
+      return res.status(400).json({ success: false, error: 'dayOfWeek must be 0-6' });
+    }
+    const item = agendaStore.addItem({
+      name: name.trim(),
+      recurrence,
+      dayOfWeek: Number(dayOfWeek),
+      startDate,
+      notes: notes?.trim() || null,
+    });
+    res.json({ success: true, item });
+  } catch (error) {
+    logger.error('Error adding agenda item', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update an agenda item
+router.put('/agenda/:id', (req, res) => {
+  try {
+    const { name, recurrence, dayOfWeek, startDate, notes } = req.body;
+    const item = agendaStore.updateItem(req.params.id, { name, recurrence, dayOfWeek: dayOfWeek != null ? Number(dayOfWeek) : undefined, startDate, notes });
+    if (!item) {
+      return res.status(404).json({ success: false, error: 'Item not found' });
+    }
+    res.json({ success: true, item });
+  } catch (error) {
+    logger.error('Error updating agenda item', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Remove an agenda item
+router.delete('/agenda/:id', (req, res) => {
+  try {
+    agendaStore.removeItem(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error removing agenda item', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

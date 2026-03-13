@@ -3,6 +3,7 @@ import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
 import outlookManager from '../integrations/OutlookManager.js';
+import agendaStore from '../habits/AgendaStore.js';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
@@ -300,6 +301,20 @@ ${yesterdayNotes}
 ${scheduleText}
 
 `;
+      }
+
+      // Add recurring agenda items for today
+      try {
+        const agendaItems = agendaStore.getItemsForDate(today);
+        if (agendaItems.length > 0) {
+          initialPrompt += `
+**On Deck Today (Recurring):**
+${agendaItems.map(item => `- ${item.name}${item.notes ? ` — ${item.notes}` : ''} _(${item.recurrence})_`).join('\n')}
+
+`;
+        }
+      } catch (err) {
+        logger.debug('[WellnessMeetings] Could not load agenda items', { error: err.message });
       }
 
       initialPrompt += `

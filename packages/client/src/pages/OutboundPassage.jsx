@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card } from '../components/ui';
 import Button from '../components/ui/Button';
+import ReminderManager from '../components/reminders/ReminderManager';
+import AgendaManager from '../components/agenda/AgendaManager';
 
 const OutboundPassage = () => {
   const [events, setEvents] = useState([]);
@@ -343,6 +345,12 @@ const OutboundPassage = () => {
           )}
         </>
       )}
+
+      {/* Reminders & Agenda side by side on large screens */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ReminderManager apiUrl={apiUrl} />
+        <AgendaManager apiUrl={apiUrl} />
+      </div>
 
       {/* Info Card */}
       <Card variant="canvas">
