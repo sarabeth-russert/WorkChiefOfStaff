@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card } from '../components/ui';
+import { Card, CheckIcon } from '../components/ui';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
 
@@ -354,7 +354,7 @@ const Dashboard = () => {
               </div>
             ) : events.length > 0 ? (
               <div className="text-center py-6">
-                <div className="text-3xl mb-2">&#x2705;</div>
+                <CheckIcon size="w-10 h-10" className="mx-auto mb-2 text-jungle" />
                 <p className="text-vintage-text font-serif opacity-70">All done for today!</p>
               </div>
             ) : (
@@ -519,7 +519,7 @@ const Dashboard = () => {
               )}
               {briefing?.standupDone && !briefing?.retroDone && (
                 <div className="flex items-center gap-3 p-3 rounded-lg bg-jungle bg-opacity-10 border-2 border-jungle-light">
-                  <span className="text-2xl">&#x2705;</span>
+                  <CheckIcon size="w-10 h-10" className="text-jungle" />
                   <div>
                     <div className="font-ui uppercase text-sm text-jungle font-bold">
                       Standup Complete

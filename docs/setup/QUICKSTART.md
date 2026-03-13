@@ -124,12 +124,13 @@ If you see "port already in use" errors:
    - `packages/client/vite.config.js` (server.port)
    - `packages/client/.env` (VITE_API_URL, VITE_SOCKET_URL)
 
-### API Key Errors
+### AWS Credential Errors
 
-If you see "Missing required environment variables" error:
-1. Make sure `packages/server/.env` exists
-2. Verify your API key is correct (starts with `sk-ant-`)
-3. No quotes needed around the API key
+If you see "Missing required environment variables" or Bedrock access errors:
+1. Make sure `packages/server/.env` exists with AWS config
+2. Verify AWS credentials are configured (`aws configure`)
+3. Ensure your AWS account has Bedrock access and Claude models enabled
+4. See `AWS_BEDROCK_SETUP.md` for detailed troubleshooting
 
 ### Socket Connection Issues
 
@@ -151,10 +152,10 @@ npm install
 
 Once you have the MVP running:
 
-1. **Customize the API key**: Add your real Anthropic API key
-2. **Try different tasks**: Test the Explorer agent with various code review tasks
+1. **Configure integrations**: Set up Jira, Oura Ring, or Outlook in Settings
+2. **Try different agents**: Test all 6 agents on the Expedition page
 3. **Explore the codebase**: Check out the agent system in `packages/server/src/agents`
-4. **Next phases**: Trading Post (app management), Map Room (knowledge system), Outpost (terminal)
+4. **Generate assets**: See `/docs/image-generation/` for icon and illustration prompts
 
 ## Development Workflow
 

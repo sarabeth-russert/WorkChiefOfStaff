@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button } from '../components/ui';
+import { Card, Button, CheckIcon } from '../components/ui';
 import useAppStore from '../stores/appStore';
 import AppCard from '../components/app/AppCard';
 import AddAppModal from '../components/app/AddAppModal';
@@ -125,7 +125,7 @@ const TradingPost = () => {
           </Card>
 
           <Card variant="canvas" className="text-center border-jungle">
-            <div className="text-4xl mb-2">✅</div>
+            <CheckIcon size="w-10 h-10" className="mx-auto mb-2 text-jungle" />
             <h3 className="text-3xl font-poster text-vintage-text mb-1">
               {systemStats.runningCount}
             </h3>

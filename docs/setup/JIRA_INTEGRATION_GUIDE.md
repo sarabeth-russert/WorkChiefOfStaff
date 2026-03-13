@@ -55,25 +55,41 @@ The setup process differs slightly depending on whether you're using **Jira Clou
 
 ### Jira Server/Data Center Setup (Custom Domain)
 
+The system auto-detects Jira Server when your domain is not `*.atlassian.net`.
+
 #### Step 1: Get Your Credentials
 
 You'll need:
 - Your Jira server domain (e.g., `jira.company.com`)
-- Your Jira username (what you use to log in)
-- Your password or Personal Access Token (if available)
+- Your Jira username (what you use to log in — not email)
+- A **Personal Access Token (PAT)** is recommended (see [`JIRA_BEARER_AUTH_UPDATE.md`](../troubleshooting/JIRA_BEARER_AUTH_UPDATE.md))
 
 #### Step 2: Configure in Settings
 
 1. Navigate to **Settings** page (gear icon in nav)
 2. Click the **"Jira"** tab (🎫)
 3. Fill in your credentials:
-   - **Jira Domain**: `jira.company.com` (no `https://`)
+   - **Jira Domain**: `jira.company.com` (no `https://`, no trailing slash)
    - **Username/Email**: Your Jira username
-   - **API Token/Password**: Your Jira password or PAT
+   - **API Token/Password**: Your PAT or password
 4. Click **"Test Connection"** to verify
 5. Once you see ✅ success message, click **"Save Configuration"**
 
-**📘 For detailed Server setup instructions, see [`JIRA_SERVER_SETUP.md`](./JIRA_SERVER_SETUP.md)**
+#### Key Differences: Server vs Cloud
+
+| Feature | Jira Server | Jira Cloud |
+|---------|-------------|-----------|
+| Domain | Custom (e.g., `jira.company.com`) | `*.atlassian.net` |
+| API Version | REST API v2 | REST API v3 |
+| Username | Jira login username | Email address |
+| Credentials | PAT or password | API token only |
+| Description Format | Plain text | Atlassian Document Format |
+
+#### Domain Format
+
+- ✅ `jira.company.com`
+- ❌ `https://jira.company.com`
+- ❌ `jira.company.com/`
 
 ### Step 3: Access Jira Tickets
 
