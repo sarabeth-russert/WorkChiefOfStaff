@@ -2,8 +2,9 @@ import logger from '../config/logger.js';
 import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
+import outlookManager from '../integrations/OutlookManager.js';
 import fs from 'fs/promises';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,6 +13,7 @@ const __dirname = path.dirname(__filename);
 
 const DEFAULT_TIMEZONE = 'America/Los_Angeles';
 const SETTINGS_PATH = path.join(__dirname, '../../data/wellness/settings.json');
+const CALENDAR_DIR = path.resolve(__dirname, '../../data/calendar');
 
 /**
  * Format a Date object as YYYY-MM-DD in the given timezone
@@ -272,6 +274,10 @@ class WellnessMeetings {
         logger.warn('[WellnessMeetings] Could not retrieve yesterday\'s notes', { error: error.message });
       }
 
+      // Fetch today's calendar events
+      const calendarEvents = await this.getTodayCalendarEvents();
+      const scheduleText = this.formatEventsForContext(calendarEvents);
+
       // Create initial prompt asking user for their scores
       let initialPrompt = `Good morning! 🌅
 
@@ -283,6 +289,15 @@ Since Oura Ring readiness data takes 24 hours to sync, let's start with what you
         initialPrompt += `
 **Quick Reminder from Yesterday Evening:**
 ${yesterdayNotes}
+
+`;
+      }
+
+      // Add today's schedule if available
+      if (scheduleText) {
+        initialPrompt += `
+**Today's Schedule:**
+${scheduleText}
 
 `;
       }
@@ -311,7 +326,8 @@ Once you share these, I can provide personalized guidance for your day!`;
         status: 'active',
         startedAt: new Date().toISOString(),
         awaitingScores: true, // Flag to indicate we need user's scores first
-        jiraMetrics: jiraMetrics || null
+        jiraMetrics: jiraMetrics || null,
+        calendarEvents: calendarEvents.length > 0 ? calendarEvents : null
       };
 
       const session = await wellnessDataStore.saveSession(today, sessionData);
@@ -380,6 +396,61 @@ Once you share these, I can provide personalized guidance for your day!`;
       });
       return null;
     }
+  }
+
+  /**
+   * Fetch today's calendar events (Outlook first, then manual fallback)
+   */
+  async getTodayCalendarEvents() {
+    try {
+      // Try Outlook first
+      const outlookEvents = await outlookManager.getTodayEvents().catch(() => []);
+      if (outlookEvents && outlookEvents.length > 0) {
+        return outlookEvents
+          .filter(e => !e.isCancelled)
+          .sort((a, b) => new Date(a.start) - new Date(b.start))
+          .map(e => ({
+            subject: e.subject,
+            start: e.start,
+            end: e.end,
+            location: e.location,
+            isAllDay: e.isAllDay,
+          }));
+      }
+    } catch (err) {
+      logger.debug('[WellnessMeetings] Outlook not available for calendar', { error: err.message });
+    }
+
+    // Fall back to manual events
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const manualPath = path.join(CALENDAR_DIR, `manual-${todayStr}.json`);
+      if (existsSync(manualPath)) {
+        const data = JSON.parse(readFileSync(manualPath, 'utf-8'));
+        return (data.events || []).sort((a, b) => new Date(a.start || 0) - new Date(b.start || 0));
+      }
+    } catch (err) {
+      logger.debug('[WellnessMeetings] No manual calendar events', { error: err.message });
+    }
+
+    return [];
+  }
+
+  /**
+   * Format calendar events into a readable string for AI context
+   */
+  formatEventsForContext(events) {
+    if (!events || events.length === 0) return null;
+
+    const lines = events.map(e => {
+      if (e.isAllDay) return `- All Day: ${e.subject}`;
+      const startTime = new Date(e.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+      const endTime = e.end ? new Date(e.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+      const location = e.location ? ` (${e.location})` : '';
+      return `- ${startTime}${endTime ? ` - ${endTime}` : ''}: ${e.subject}${location}`;
+    });
+
+    return lines.join('\n');
   }
 
   /**

@@ -1,5 +1,11 @@
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import logger from '../config/logger.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import agentFactory from '../agents/AgentFactory.js';
 import notificationScheduler from '../wellness/NotificationScheduler.js';
 
@@ -1170,19 +1176,31 @@ router.post('/wellness/session/message', async (req, res) => {
       const sleepScore = sleepMatch ? parseInt(sleepMatch[1]) : null;
       const readinessScore = readinessMatch ? parseInt(readinessMatch[1]) : null;
 
+      // Build calendar context if available from session
+      let scheduleContext = '';
+      if (session?.calendarEvents?.length > 0) {
+        const eventLines = session.calendarEvents.map(e => {
+          if (e.isAllDay) return `- All Day: ${e.subject}`;
+          const startTime = new Date(e.start).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+          const endTime = e.end ? new Date(e.end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) : '';
+          return `- ${startTime}${endTime ? ` - ${endTime}` : ''}: ${e.subject}`;
+        });
+        scheduleContext = `\nToday's schedule:\n${eventLines.join('\n')}\n`;
+      }
+
       // Build enhanced context for Guide
       task = `The user has shared their morning wellness scores:
 ${sleepScore ? `- Sleep Score: ${sleepScore}/100` : ''}
 ${readinessScore ? `- Readiness Score: ${readinessScore}/100` : ''}
-
+${scheduleContext}
 User's message: "${message}"
 
-Based on these scores, please provide:
+Based on these scores${scheduleContext ? ' and their schedule' : ''}, please provide:
 1. A brief, encouraging assessment of their recovery and readiness
-2. One specific, actionable wellness tip for today
+2. ${scheduleContext ? 'Schedule-aware advice — flag busy stretches, suggest when to take breaks, and note any energy management tips based on meeting density' : 'One specific, actionable wellness tip for today'}
 3. What to focus on for optimal performance
 
-Keep your response warm, supportive, and under 150 words.`;
+Keep your response warm, supportive, and concise.`;
 
       // Mark session as no longer awaiting scores
       await wellnessDataStore.updateSession(date, sessionId, { awaitingScores: false });
@@ -1740,6 +1758,335 @@ router.get('/weather/forecast', async (req, res) => {
     logger.error('Error fetching weather forecast', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// =============================================
+// Manual Calendar Events
+// =============================================
+
+const calendarDir = path.resolve(__dirname, '../../data/calendar');
+if (!fs.existsSync(calendarDir)) {
+  fs.mkdirSync(calendarDir, { recursive: true });
+}
+
+function getManualEventsPath(dateStr) {
+  return path.join(calendarDir, `manual-${dateStr}.json`);
+}
+
+function parseEventText(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const events = [];
+
+  for (const line of lines) {
+    // Try parsing "HH:MM AM - HH:MM PM - Subject" or "HH:MM AM - Subject"
+    const timeRangeMatch = line.match(
+      /^(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–]\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–:]\s*(.+)/i
+    );
+    const singleTimeMatch = line.match(
+      /^(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–:]\s*(.+)/i
+    );
+
+    if (timeRangeMatch) {
+      const startStr = timeRangeMatch[1].trim();
+      const endStr = timeRangeMatch[2].trim();
+      const subject = timeRangeMatch[3].trim();
+      events.push({
+        subject,
+        start: parseTimeToISO(startStr),
+        end: parseTimeToISO(endStr),
+        location: null,
+        isAllDay: false,
+        showAs: 'busy',
+        organizer: null,
+        attendeeCount: 0,
+        source: 'manual',
+      });
+    } else if (singleTimeMatch) {
+      const startStr = singleTimeMatch[1].trim();
+      const subject = singleTimeMatch[2].trim();
+      const start = parseTimeToISO(startStr);
+      // Default 30min duration
+      const end = new Date(new Date(start).getTime() + 30 * 60 * 1000).toISOString();
+      events.push({
+        subject,
+        start,
+        end,
+        location: null,
+        isAllDay: false,
+        showAs: 'busy',
+        organizer: null,
+        attendeeCount: 0,
+        source: 'manual',
+      });
+    } else {
+      // No time found, treat as all-day event
+      events.push({
+        subject: line,
+        start: null,
+        end: null,
+        location: null,
+        isAllDay: true,
+        showAs: 'busy',
+        organizer: null,
+        attendeeCount: 0,
+        source: 'manual',
+      });
+    }
+  }
+
+  return events;
+}
+
+function parseTimeToISO(timeStr) {
+  const today = new Date().toISOString().split('T')[0];
+  const normalized = timeStr.toLowerCase().replace(/\s+/g, '');
+  const isPM = normalized.includes('pm');
+  const isAM = normalized.includes('am');
+  const cleaned = normalized.replace(/am|pm/g, '');
+
+  let [hours, minutes] = cleaned.split(':').map(Number);
+  if (isNaN(minutes)) minutes = 0;
+
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${today}T${pad(hours)}:${pad(minutes)}:00`;
+}
+
+// Save manual events (text or structured)
+router.post('/calendar/manual', async (req, res) => {
+  try {
+    const { text, events: structuredEvents, date } = req.body;
+    const dateStr = date || new Date().toISOString().split('T')[0];
+
+    let events;
+    if (text) {
+      events = parseEventText(text);
+    } else if (structuredEvents) {
+      events = structuredEvents;
+    } else {
+      return res.status(400).json({ success: false, error: 'Provide "text" or "events"' });
+    }
+
+    const filePath = getManualEventsPath(dateStr);
+    fs.writeFileSync(filePath, JSON.stringify({ date: dateStr, events, updatedAt: new Date().toISOString() }, null, 2));
+    logger.info('Manual calendar events saved', { date: dateStr, count: events.length });
+
+    res.json({ success: true, date: dateStr, events });
+  } catch (error) {
+    logger.error('Error saving manual calendar events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get manual events for today (or a specific date)
+router.get('/calendar/manual', async (req, res) => {
+  try {
+    const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+    const filePath = getManualEventsPath(dateStr);
+
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+      res.json({ success: true, ...data });
+    } else {
+      res.json({ success: true, date: dateStr, events: [] });
+    }
+  } catch (error) {
+    logger.error('Error reading manual calendar events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete manual events for a date
+router.delete('/calendar/manual', async (req, res) => {
+  try {
+    const dateStr = req.query.date || new Date().toISOString().split('T')[0];
+    const filePath = getManualEventsPath(dateStr);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    res.json({ success: true, date: dateStr });
+  } catch (error) {
+    logger.error('Error deleting manual calendar events', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// =============================================
+// Morning Briefing (aggregated dashboard data)
+// =============================================
+
+router.get('/briefing', async (req, res) => {
+  const briefing = {
+    timestamp: new Date().toISOString(),
+    weather: null,
+    wellness: null,
+    events: null,
+    jira: null,
+    lastRetro: null,
+    todayPlan: null,
+    standupDone: false,
+    retroDone: false,
+  };
+
+  // Fetch all data in parallel, gracefully handling failures
+  const [weatherResult, wellnessResult, yesterdayResult, eventsResult, jiraResult, sessionsResult, standupResult, retroResult] = await Promise.allSettled([
+    // Weather
+    weatherManager.getSimpleForecast(),
+    // Today's wellness
+    wellnessDataStore.getDailyMetrics(new Date().toISOString().split('T')[0]),
+    // Yesterday's wellness (fallback)
+    wellnessDataStore.getDailyMetrics(
+      new Date(Date.now() - 86400000).toISOString().split('T')[0]
+    ),
+    // Today's calendar events
+    outlookManager.getTodayEvents().catch(() => []),
+    // Active Jira tickets
+    jiraManager.getIssues('CONTECH', { myIssuesOnly: true, maxResults: 100 }).catch(() => ({ issues: [] })),
+    // Recent sessions (last 3 days for retro carry-forward)
+    wellnessDataStore.getSessionsRange(
+      new Date(Date.now() - 3 * 86400000).toISOString().split('T')[0],
+      new Date().toISOString().split('T')[0]
+    ),
+    // Standup/retro status
+    wellnessMeetings.hasStandupBeenDeliveredToday().catch(() => false),
+    wellnessMeetings.hasRetroBeenDeliveredToday().catch(() => false),
+  ]);
+
+  // Weather
+  if (weatherResult.status === 'fulfilled') {
+    briefing.weather = weatherResult.value;
+  }
+
+  // Wellness - try today, fall back to yesterday
+  if (wellnessResult.status === 'fulfilled' && wellnessResult.value?.metrics) {
+    const m = wellnessResult.value.metrics;
+    briefing.wellness = {
+      date: 'today',
+      readiness: m.readiness?.data?.[0]?.score ?? null,
+      sleep: m.sleep?.data?.[0]?.score ?? null,
+      activity: m.activity?.data?.[0]?.score ?? null,
+      sleepDuration: m.sleep?.data?.[0]?.total_sleep ?? null,
+      contributors: m.readiness?.data?.[0]?.contributors ?? null,
+    };
+  } else if (yesterdayResult.status === 'fulfilled' && yesterdayResult.value?.metrics) {
+    const m = yesterdayResult.value.metrics;
+    briefing.wellness = {
+      date: 'yesterday',
+      readiness: m.readiness?.data?.[0]?.score ?? null,
+      sleep: m.sleep?.data?.[0]?.score ?? null,
+      activity: m.activity?.data?.[0]?.score ?? null,
+      sleepDuration: m.sleep?.data?.[0]?.total_sleep ?? null,
+      contributors: m.readiness?.data?.[0]?.contributors ?? null,
+    };
+  }
+
+  // Calendar events - sorted by start time, upcoming only
+  if (eventsResult.status === 'fulfilled') {
+    const allEvents = eventsResult.value || [];
+    const now = new Date();
+    briefing.events = allEvents
+      .filter(e => !e.isCancelled)
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+      .map(e => ({
+        subject: e.subject,
+        start: e.start,
+        end: e.end,
+        location: e.location,
+        isAllDay: e.isAllDay,
+        showAs: e.showAs,
+        organizer: e.organizer,
+        attendeeCount: e.attendees?.length || 0,
+        isPast: new Date(e.end) < now,
+      }));
+  }
+
+  // Fall back to manual events if Outlook returned nothing
+  if (!briefing.events || briefing.events.length === 0) {
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const manualPath = getManualEventsPath(todayStr);
+      if (fs.existsSync(manualPath)) {
+        const manualData = JSON.parse(fs.readFileSync(manualPath, 'utf-8'));
+        const now = new Date();
+        briefing.events = (manualData.events || [])
+          .sort((a, b) => new Date(a.start || 0) - new Date(b.start || 0))
+          .map(e => ({
+            ...e,
+            isPast: e.end ? new Date(e.end) < now : false,
+          }));
+        briefing.eventsSource = 'manual';
+      }
+    } catch (err) {
+      logger.debug('No manual calendar events found', { error: err.message });
+    }
+  } else {
+    briefing.eventsSource = 'outlook';
+  }
+
+  // Jira - group by status, prioritize In Progress
+  if (jiraResult.status === 'fulfilled') {
+    const issues = jiraResult.value?.issues || [];
+    const inProgress = [];
+    const todo = [];
+    const inReview = [];
+
+    for (const issue of issues) {
+      const status = issue.fields?.status?.name?.toLowerCase() || '';
+      const item = {
+        key: issue.key,
+        summary: issue.fields?.summary,
+        status: issue.fields?.status?.name,
+        priority: issue.fields?.priority?.name,
+        type: issue.fields?.issuetype?.name,
+      };
+      if (status.includes('progress') || status.includes('development')) {
+        inProgress.push(item);
+      } else if (status.includes('review')) {
+        inReview.push(item);
+      } else if (!status.includes('done') && !status.includes('closed')) {
+        todo.push(item);
+      }
+    }
+
+    briefing.jira = { inProgress, inReview, todo };
+  }
+
+  // Last retro notes (carry forward)
+  if (sessionsResult.status === 'fulfilled') {
+    const sessions = sessionsResult.value || [];
+    const completedRetros = sessions
+      .filter(s => s.type === 'retro' && s.status === 'completed' && s.summary)
+      .sort((a, b) => new Date(b.completedAt || b.startedAt) - new Date(a.completedAt || a.startedAt));
+
+    if (completedRetros.length > 0) {
+      const retro = completedRetros[0];
+      briefing.lastRetro = {
+        date: retro.date || new Date(retro.startedAt).toISOString().split('T')[0],
+        accomplishments: retro.summary?.accomplishments || [],
+        notesForTomorrow: retro.summary?.notesForTomorrow || null,
+      };
+    }
+
+    // Also get today's standup plan if it exists
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStandup = sessions
+      .filter(s => s.type === 'standup' && s.status === 'completed' && s.summary)
+      .sort((a, b) => new Date(b.completedAt || b.startedAt) - new Date(a.completedAt || a.startedAt))
+      .find(s => (s.date || new Date(s.startedAt).toISOString().split('T')[0]) === todayStr);
+
+    if (todayStandup?.summary?.plan) {
+      briefing.todayPlan = todayStandup.summary.plan;
+    }
+  }
+
+  // Session status
+  briefing.standupDone = standupResult.status === 'fulfilled' ? standupResult.value : false;
+  briefing.retroDone = retroResult.status === 'fulfilled' ? retroResult.value : false;
+
+  res.json({ success: true, briefing });
 });
 
 router.get('/weather/simple', async (req, res) => {

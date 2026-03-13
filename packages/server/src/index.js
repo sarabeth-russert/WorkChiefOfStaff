@@ -69,7 +69,9 @@ app.use((req, res, next) => {
     '/api/wellness/trends',
     '/api/wellness/sessions',
     '/api/outlook/events/today',
-    '/api/jira/projects'
+    '/api/jira/projects',
+    '/api/briefing',
+    '/api/calendar/manual'
   ];
 
   const isRoutine = routineEndpoints.some(endpoint => req.path.startsWith(endpoint));
