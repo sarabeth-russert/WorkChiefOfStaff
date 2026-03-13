@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card } from '../ui';
+import { Card, CheckIcon } from '../ui';
 
 const IssueCard = ({ issue }) => {
   const getStatusColor = (statusName) => {
@@ -42,7 +42,7 @@ const IssueCard = ({ issue }) => {
             <span className="text-2xl">
               {issue.fields.issuetype?.name === 'Bug' ? '🐛' :
                issue.fields.issuetype?.name === 'Story' ? '📖' :
-               issue.fields.issuetype?.name === 'Task' ? '✅' :
+               issue.fields.issuetype?.name === 'Task' ? <CheckIcon size="w-6 h-6" className="text-jungle" /> :
                issue.fields.issuetype?.name === 'Epic' ? '🎯' : '📝'}
             </span>
             <span

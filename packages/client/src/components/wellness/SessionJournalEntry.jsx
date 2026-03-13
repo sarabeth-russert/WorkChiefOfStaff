@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card } from '../ui';
+import { Card, CheckIcon } from '../ui';
 import MessageBubble from './MessageBubble';
 import { SESSION_TYPE_CONFIG } from '../../utils/wellness';
 
@@ -119,7 +119,7 @@ const SessionJournalEntry = ({
                 {session.type === 'retro' && (
                   <>
                     <div className="flex items-center gap-1 text-jungle">
-                      <span className="font-poster">✅</span>
+                      <CheckIcon size="w-5 h-5" />
                       <span className="opacity-80">{jiraMetrics.closedPoints || 0} pts closed</span>
                     </div>
                     <div className="flex items-center gap-1 text-mustard">
