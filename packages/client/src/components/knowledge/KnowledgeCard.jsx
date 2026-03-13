@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Button } from '../ui';
 
 const KnowledgeCard = ({ item, onDelete, onEdit }) => {
@@ -32,6 +32,9 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
     });
   };
 
+  const [expanded, setExpanded] = useState(false);
+  const isLong = item.content && item.content.length > 200;
+
   return (
     <Card
       variant="canvas"
@@ -53,9 +56,18 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
         )}
       </div>
 
-      <p className="text-sm text-vintage-text mb-3 line-clamp-3">
+      <p className={`text-sm text-vintage-text mb-1 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
         {item.content}
       </p>
+      {isLong && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase mb-3"
+        >
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+      {!isLong && <div className="mb-3" />}
 
       {/* Tags */}
       {item.tags && item.tags.length > 0 && (

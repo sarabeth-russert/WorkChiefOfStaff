@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import agentFactory from '../agents/AgentFactory.js';
 import notificationScheduler from '../wellness/NotificationScheduler.js';
+import habitStore from '../habits/HabitStore.js';
 
 const router = express.Router();
 
@@ -2086,6 +2087,21 @@ router.get('/briefing', async (req, res) => {
   briefing.standupDone = standupResult.status === 'fulfilled' ? standupResult.value : false;
   briefing.retroDone = retroResult.status === 'fulfilled' ? retroResult.value : false;
 
+  // Habits
+  try {
+    const habitConfig = habitStore.getConfig();
+    if (habitConfig.habits.length > 0) {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const dayLog = habitStore.getDayLog(todayStr);
+      briefing.habits = {
+        habits: habitConfig.habits,
+        completed: dayLog.completed,
+      };
+    }
+  } catch (err) {
+    logger.debug('Error loading habits for briefing', { error: err.message });
+  }
+
   res.json({ success: true, briefing });
 });
 
@@ -2098,6 +2114,99 @@ router.get('/weather/simple', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching simple weather forecast', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== Habits ====================
+
+// Get habit config (which habits are being tracked)
+router.get('/habits/config', (req, res) => {
+  try {
+    const config = habitStore.getConfig();
+    res.json({ success: true, config });
+  } catch (error) {
+    logger.error('Error getting habit config', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add a new habit
+router.post('/habits/config', (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    if (!name || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Name is required' });
+    }
+    const habit = habitStore.addHabit({ name: name.trim(), icon });
+    res.json({ success: true, habit });
+  } catch (error) {
+    logger.error('Error adding habit', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update a habit
+router.put('/habits/config/:habitId', (req, res) => {
+  try {
+    const { name, icon } = req.body;
+    const habit = habitStore.updateHabit(req.params.habitId, { name, icon });
+    if (!habit) {
+      return res.status(404).json({ success: false, error: 'Habit not found' });
+    }
+    res.json({ success: true, habit });
+  } catch (error) {
+    logger.error('Error updating habit', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Remove a habit
+router.delete('/habits/config/:habitId', (req, res) => {
+  try {
+    habitStore.removeHabit(req.params.habitId);
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error removing habit', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get today's (or specific date's) habit log
+router.get('/habits/day/:date?', (req, res) => {
+  try {
+    const date = req.params.date || new Date().toISOString().split('T')[0];
+    const config = habitStore.getConfig();
+    const dayLog = habitStore.getDayLog(date);
+    res.json({ success: true, habits: config.habits, completed: dayLog.completed });
+  } catch (error) {
+    logger.error('Error getting day habits', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Toggle a habit for a date
+router.post('/habits/toggle', (req, res) => {
+  try {
+    const { date, habitId } = req.body;
+    const todayStr = date || new Date().toISOString().split('T')[0];
+    const dayLog = habitStore.toggleHabit(todayStr, habitId);
+    res.json({ success: true, completed: dayLog.completed });
+  } catch (error) {
+    logger.error('Error toggling habit', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get week summary for trend display
+router.get('/habits/week/:endDate?', (req, res) => {
+  try {
+    const endDate = req.params.endDate || new Date().toISOString().split('T')[0];
+    const config = habitStore.getConfig();
+    const days = habitStore.getWeekSummary(endDate);
+    res.json({ success: true, habits: config.habits, days });
+  } catch (error) {
+    logger.error('Error getting habit week summary', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CheckIcon } from '../components/ui';
 import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
+import HabitTracker from '../components/habits/HabitTracker';
 
 const Dashboard = () => {
   const [briefing, setBriefing] = useState(null);
@@ -10,6 +11,10 @@ const Dashboard = () => {
   const [eventInput, setEventInput] = useState('');
   const [savingEvents, setSavingEvents] = useState(false);
   const [showEventInput, setShowEventInput] = useState(false);
+  const [showQuickCapture, setShowQuickCapture] = useState(false);
+  const [quickNote, setQuickNote] = useState({ title: '', content: '' });
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
@@ -58,6 +63,36 @@ const Dashboard = () => {
       await fetchBriefing();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const saveQuickNote = async () => {
+    if (!quickNote.title.trim() || !quickNote.content.trim()) return;
+    try {
+      setSavingNote(true);
+      const response = await fetch(`${apiUrl}/api/knowledge`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: quickNote.title,
+          content: quickNote.content,
+          type: 'note',
+          category: 'general',
+          tags: [],
+          autoClassify: true,
+        }),
+      });
+      if (!response.ok) throw new Error('Failed to save note');
+      setQuickNote({ title: '', content: '' });
+      setNoteSaved(true);
+      setTimeout(() => {
+        setNoteSaved(false);
+        setShowQuickCapture(false);
+      }, 1500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingNote(false);
     }
   };
 
@@ -120,6 +155,17 @@ const Dashboard = () => {
     }
   };
 
+  // Habits state (initialized from briefing, updated optimistically)
+  const [habitList, setHabitList] = useState([]);
+  const [habitCompleted, setHabitCompleted] = useState({});
+
+  useEffect(() => {
+    if (briefing?.habits) {
+      setHabitList(briefing.habits.habits);
+      setHabitCompleted(briefing.habits.completed);
+    }
+  }, [briefing]);
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -145,6 +191,44 @@ const Dashboard = () => {
   const lastRetro = briefing?.lastRetro;
   const todayPlan = briefing?.todayPlan;
 
+  const handleToggleHabit = async (habitId) => {
+    setHabitCompleted(prev => ({ ...prev, [habitId]: !prev[habitId] }));
+    try {
+      await fetch(`${apiUrl}/api/habits/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ habitId }),
+      });
+    } catch (err) {
+      setHabitCompleted(prev => ({ ...prev, [habitId]: !prev[habitId] }));
+    }
+  };
+
+  const handleAddHabit = async (name) => {
+    try {
+      const res = await fetch(`${apiUrl}/api/habits/config`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) throw new Error('Failed to add habit');
+      const { habit } = await res.json();
+      setHabitList(prev => [...prev, habit]);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const handleRemoveHabit = async (habitId) => {
+    const prev = habitList;
+    setHabitList(list => list.filter(h => h.id !== habitId));
+    try {
+      await fetch(`${apiUrl}/api/habits/config/${habitId}`, { method: 'DELETE' });
+    } catch (err) {
+      setHabitList(prev);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Hero Greeting */}
@@ -156,78 +240,6 @@ const Dashboard = () => {
           {briefing?.weather || 'Your daily expedition briefing is ready.'}
         </p>
       </div>
-
-      {/* Readiness + Advice Banner */}
-      {wellness && advice && (
-        <div className={`rounded-lg border-3 p-6 ${getToneBg(advice.tone)} shadow-vintage`}>
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            {/* Wellness Icon */}
-            <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-36 h-36" />
-
-            {/* Score Cluster */}
-            <div className="flex items-center gap-6 flex-shrink-0">
-              {wellness.readiness && (
-                <div className="text-center">
-                  <div className={`text-5xl font-poster ${getToneColor(advice.tone)}`}>
-                    {wellness.readiness}
-                  </div>
-                  <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                    Readiness
-                  </div>
-                </div>
-              )}
-              {wellness.sleep && (
-                <div className="text-center">
-                  <div className="text-3xl font-poster text-vintage-text opacity-80">
-                    {wellness.sleep}
-                  </div>
-                  <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                    Sleep
-                    {wellness.sleepDuration && (
-                      <span className="block text-vintage-text opacity-50">
-                        {formatSleepDuration(wellness.sleepDuration)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
-              {wellness.activity && (
-                <div className="text-center">
-                  <div className="text-3xl font-poster text-vintage-text opacity-80">
-                    {wellness.activity}
-                  </div>
-                  <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                    Activity
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Divider */}
-            <div className="hidden md:block w-px h-16 bg-vintage-text opacity-20" />
-            <div className="block md:hidden h-px w-full bg-vintage-text opacity-20" />
-
-            {/* Advice */}
-            <div className="flex-1 text-center md:text-left">
-              <p className={`text-lg font-serif ${getToneColor(advice.tone)}`}>
-                {advice.text}
-              </p>
-              {wellness.date === 'yesterday' && (
-                <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
-                  Based on yesterday's data — today's hasn't synced yet
-                </p>
-              )}
-            </div>
-
-            {/* Link to full vitals */}
-            <Link to="/medic" className="flex-shrink-0">
-              <Button variant="ghost" size="sm">
-                Full Vitals
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* Main Briefing Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -445,6 +457,88 @@ const Dashboard = () => {
         {/* Right Column: Intel + Actions */}
         <div className="space-y-6">
 
+          {/* Wellness + Habits Card */}
+          <Card variant="canvas" className={wellness && advice ? getToneBg(advice.tone) : ''}>
+            {wellness && advice && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-24 h-24" />
+                    <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
+                      Wellness
+                    </h2>
+                  </div>
+                  <Link to="/medic">
+                    <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
+                      Full Vitals
+                    </span>
+                  </Link>
+                </div>
+
+                {/* Scores Row */}
+                <div className="flex items-center justify-around mb-4">
+                  {wellness.readiness && (
+                    <div className="text-center">
+                      <div className={`text-4xl font-poster ${getToneColor(advice.tone)}`}>
+                        {wellness.readiness}
+                      </div>
+                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                        Readiness
+                      </div>
+                    </div>
+                  )}
+                  {wellness.sleep && (
+                    <div className="text-center">
+                      <div className="text-2xl font-poster text-vintage-text opacity-80">
+                        {wellness.sleep}
+                      </div>
+                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                        Sleep
+                        {wellness.sleepDuration && (
+                          <span className="block text-vintage-text opacity-50">
+                            {formatSleepDuration(wellness.sleepDuration)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {wellness.activity && (
+                    <div className="text-center">
+                      <div className="text-2xl font-poster text-vintage-text opacity-80">
+                        {wellness.activity}
+                      </div>
+                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                        Activity
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Advice */}
+                <p className={`text-sm font-serif ${getToneColor(advice.tone)}`}>
+                  {advice.text}
+                </p>
+                {wellness.date === 'yesterday' && (
+                  <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
+                    Based on yesterday's data
+                  </p>
+                )}
+
+                {/* Divider before habits */}
+                <div className="h-px w-full bg-vintage-text opacity-20 my-4" />
+              </div>
+            )}
+
+            {/* Daily Habits */}
+            <HabitTracker
+              habits={habitList}
+              completed={habitCompleted}
+              onToggle={handleToggleHabit}
+              onAdd={handleAddHabit}
+              onRemove={handleRemoveHabit}
+            />
+          </Card>
+
           {/* Carry-Forward Notes */}
           {(lastRetro?.notesForTomorrow || todayPlan) && (
             <Card variant="canvas" className="border-mustard">
@@ -556,19 +650,74 @@ const Dashboard = () => {
                   </div>
                 </div>
               </Link>
-              <Link to="/map-room" className="block">
-                <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer">
+              <div>
+                <div
+                  onClick={() => setShowQuickCapture(!showQuickCapture)}
+                  className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer"
+                >
                   <DashIcon src="/images/dashboard/map-room.png" alt="Map Room" fallback="&#x1F4CD;" size="w-20 h-20" />
-                  <div>
+                  <div className="flex-1">
                     <div className="font-ui uppercase text-sm text-vintage-text font-bold">
                       Map Room
                     </div>
                     <div className="text-xs text-vintage-text opacity-60 font-serif">
-                      Your second brain
+                      Jot a note to your second brain
                     </div>
                   </div>
+                  <Link
+                    to="/map-room"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase flex-shrink-0"
+                  >
+                    Open
+                  </Link>
                 </div>
-              </Link>
+                {showQuickCapture && (
+                  <div className="mt-2 p-3 rounded-lg border-2 border-teal bg-teal bg-opacity-5 space-y-2">
+                    {noteSaved ? (
+                      <div className="flex items-center justify-center gap-2 py-4">
+                        <CheckIcon size="w-6 h-6" className="text-jungle" />
+                        <span className="font-ui text-sm text-jungle uppercase">Saved to Map Room</span>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          value={quickNote.title}
+                          onChange={(e) => setQuickNote({ ...quickNote, title: e.target.value })}
+                          placeholder="Title"
+                          className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-serif text-sm text-vintage-text placeholder:text-vintage-text placeholder:opacity-30 focus:border-teal focus:outline-none"
+                        />
+                        <textarea
+                          value={quickNote.content}
+                          onChange={(e) => setQuickNote({ ...quickNote, content: e.target.value })}
+                          placeholder="What's on your mind?"
+                          rows={3}
+                          className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-serif text-sm text-vintage-text placeholder:text-vintage-text placeholder:opacity-30 focus:border-teal focus:outline-none resize-none"
+                        />
+                        <div className="flex gap-2">
+                          <button
+                            onClick={saveQuickNote}
+                            disabled={savingNote || !quickNote.title.trim() || !quickNote.content.trim()}
+                            className="px-3 py-1.5 rounded bg-teal text-cream font-ui text-xs uppercase tracking-wide hover:bg-teal-dark disabled:opacity-40 transition-colors"
+                          >
+                            {savingNote ? 'Saving...' : 'Save'}
+                          </button>
+                          <button
+                            onClick={() => { setShowQuickCapture(false); setQuickNote({ title: '', content: '' }); }}
+                            className="px-3 py-1.5 rounded border border-sand-dark text-vintage-text font-ui text-xs uppercase tracking-wide hover:border-vintage-text transition-[border-color]"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <p className="text-xs text-vintage-text opacity-40 font-ui">
+                          AI auto-classifies tags and category
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </Card>
 
