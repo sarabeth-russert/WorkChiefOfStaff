@@ -216,6 +216,36 @@ Vintage 1950s icon of a green checkmark painted on a weathered wooden trail mark
 
 ---
 
+## Banner Images (Wide Cards)
+
+Banner images are used in the wide col-span-2 dashboard cards (Today's Route, Field Assignments). They appear in a full-bleed gradient strip across the top of the card, functioning as scene-setters. Currently these cards use the square icon versions — generating dedicated wide banners is optional but recommended for a more immersive feel.
+
+- **Format**: PNG with transparent background
+- **Size**: 1200x300 pixels (4:1 wide ratio)
+- **Style**: Same sepia-toned ink illustration style, but composed as a horizontal panoramic vignette — like a wide chapter divider illustration in a vintage adventure book
+
+### Banner: Today's Route (`calendar-banner.png`)
+
+**Purpose**: Full-width banner across top of the daily calendar card
+**Falls back to**: `calendar.png` (square icon)
+
+**Prompt**:
+```
+Create a wide panoramic vintage 1930s ink illustration of an expedition planning table seen from above. A large unrolled parchment map stretches across the center with a dotted route marked in red ink. A brass compass sits on the left edge, a pocket watch showing morning time on the right, and scattered expedition notes with handwritten times are pinned to the map. The scene fades to transparency at both edges with a warm sepia vignette. Detailed crosshatching and line work in warm amber, gold, and brown tones. Hand-drawn expedition field sketch style. Wide panoramic format 1200x300px, transparent background. 1930s jungle expedition journal chapter divider aesthetic, Disney Adventureland prop art style.
+```
+
+### Banner: Field Assignments (`assignments-banner.png`)
+
+**Purpose**: Full-width banner across top of the Jira/tasks card
+**Falls back to**: `assignments.png` (square icon)
+
+**Prompt**:
+```
+Create a wide panoramic vintage 1930s ink illustration of a mission briefing board mounted on a weathered wooden frame. Pinned documents, field reports with official stamps, and task cards with checkmarks and priority markers are arranged across a cork board. A few push-pins in brass and red hold the papers. String connects related documents like a detective's evidence board. The scene fades to transparency at both edges with a warm sepia vignette. Detailed crosshatching and line work in warm amber, gold, sunset orange, and brown tones. Hand-drawn expedition field sketch style. Wide panoramic format 1200x300px, transparent background. 1930s expedition mission briefing aesthetic, Disney Adventureland prop art style.
+```
+
+---
+
 ## File Naming Convention
 
 Save all generated icons in `/packages/client/public/images/dashboard/` with these exact names:
@@ -230,8 +260,10 @@ Save all generated icons in `/packages/client/public/images/dashboard/` with the
 - `morning-standup.png` - Morning Standup action
 - `checkmark.png` - Success/completion (utility, currently using SVG instead)
 - `map-room.png` - Map Room quick action
+- `calendar-banner.png` - Today's Route banner (wide, optional)
+- `assignments-banner.png` - Field Assignments banner (wide, optional)
 
-**Total**: 10 icon slots (9 unique prompts above + 1 needing a prompt)
+**Total**: 10 icon slots + 2 optional banners
 
 ---
 

@@ -246,347 +246,98 @@ const Dashboard = () => {
       {/* Main Briefing Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Left Column: Schedule (takes 2 cols on large) */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* Today's Route (Calendar) */}
-          <Card variant="canvas">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <DashIcon src="/images/dashboard/calendar.png" alt="Calendar" fallback="&#x1F4C5;" size="w-24 h-24" />
-                <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                  Today's Route
-                </h2>
-              </div>
-              <Link to="/outbound-passage">
-                <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
-                  Full Calendar
-                </span>
-              </Link>
-            </div>
-
-            {briefing?.eventsSource === 'manual' && (
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-ui uppercase text-mustard-dark bg-mustard bg-opacity-10 px-2 py-0.5 rounded">
-                  Manually entered
-                </span>
-                <button
-                  onClick={() => setShowEventInput(true)}
-                  className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={clearManualEvents}
-                  className="text-xs font-ui text-vintage-text opacity-40 hover:opacity-70 uppercase"
-                >
-                  Clear
-                </button>
-              </div>
-            )}
-
-            {allDayEvents.length > 0 && (
-              <div className="mb-4">
-                {allDayEvents.map((event, i) => (
-                  <div key={i} className="inline-block mr-2 mb-2 px-3 py-1 rounded-full bg-jungle bg-opacity-10 border border-jungle text-sm font-ui text-jungle">
-                    {event.subject}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {showEventInput ? (
-              <div className="space-y-3">
-                <p className="text-sm font-serif text-vintage-text opacity-70">
-                  Paste your schedule below — one event per line. Times are optional.
-                </p>
-                <div className="text-xs font-ui text-vintage-text opacity-50 space-y-0.5">
-                  <p>Formats: <span className="font-mono">9:00 AM - 10:00 AM - Team Standup</span></p>
-                  <p>or: <span className="font-mono">2:30 PM - Design Review</span></p>
-                  <p>or just: <span className="font-mono">Sprint Planning</span> (all-day)</p>
+        {/* Row 1, Col 1: Wellness + Habits */}
+        <Card variant="canvas" className={wellness && advice ? getToneBg(advice.tone) : ''}>
+          {wellness && advice && (
+            <div>
+              <div className="text-center mb-4">
+                <div className="flex justify-center mb-2">
+                  <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-28 h-28" />
                 </div>
-                <textarea
-                  value={eventInput}
-                  onChange={(e) => setEventInput(e.target.value)}
-                  placeholder={"9:00 AM - 9:30 AM - Morning Standup\n10:00 AM - 11:00 AM - Sprint Planning\n1:00 PM - Design Review\nCompany All-Hands"}
-                  className="w-full h-40 p-3 rounded-lg border-2 border-sand-dark bg-cream bg-opacity-50 font-mono text-sm text-vintage-text placeholder:text-vintage-text placeholder:opacity-30 focus:border-teal focus:outline-none resize-none"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={saveManualEvents}
-                    disabled={savingEvents || !eventInput.trim()}
-                    className="px-4 py-2 rounded-lg bg-teal text-cream font-ui text-sm uppercase tracking-wide hover:bg-teal-dark disabled:opacity-40 transition-colors"
-                  >
-                    {savingEvents ? 'Saving...' : 'Save Schedule'}
-                  </button>
-                  <button
-                    onClick={() => { setShowEventInput(false); setEventInput(''); }}
-                    className="px-4 py-2 rounded-lg border-2 border-sand-dark text-vintage-text font-ui text-sm uppercase tracking-wide hover:border-vintage-text transition-[border-color]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : upcomingEvents.length > 0 ? (
-              <div className="space-y-3">
-                {upcomingEvents.slice(0, 6).map((event, i) => (
-                  <div
-                    key={i}
-                    className={`flex items-start gap-4 p-3 rounded-lg border-l-4 ${getEventStatusStyle(event.showAs)}`}
-                  >
-                    <div className="flex-shrink-0 w-20 text-right">
-                      <div className="font-ui text-sm font-bold text-vintage-text">
-                        {formatTime(event.start)}
-                      </div>
-                      <div className="font-ui text-xs text-vintage-text opacity-50">
-                        {formatTime(event.end)}
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-serif text-vintage-text font-bold truncate">
-                        {event.subject}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-vintage-text opacity-60 font-ui mt-1">
-                        {event.location && (
-                          <span className="truncate max-w-[200px]">{event.location}</span>
-                        )}
-                        {event.organizer && (
-                          <span>{event.organizer}</span>
-                        )}
-                        {event.attendeeCount > 0 && (
-                          <span>{event.attendeeCount} attendee{event.attendeeCount !== 1 ? 's' : ''}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {upcomingEvents.length > 6 && (
-                  <p className="text-sm text-vintage-text opacity-50 font-ui text-center pt-2">
-                    + {upcomingEvents.length - 6} more event{upcomingEvents.length - 6 !== 1 ? 's' : ''}
-                  </p>
-                )}
-              </div>
-            ) : events.length > 0 ? (
-              <div className="text-center py-6">
-                <CheckIcon size="w-10 h-10" className="mx-auto mb-2 text-jungle" />
-                <p className="text-vintage-text font-serif opacity-70">All done for today!</p>
-              </div>
-            ) : (
-              <div className="text-center py-6">
-                <div className="text-3xl mb-2">&#x1F3DC;</div>
-                <p className="text-vintage-text font-serif opacity-70 mb-3">
-                  No calendar connected yet.
-                </p>
-                <button
-                  onClick={() => setShowEventInput(true)}
-                  className="px-4 py-2 rounded-lg bg-teal bg-opacity-10 border-2 border-teal text-teal font-ui text-sm uppercase tracking-wide hover:bg-teal hover:text-cream transition-colors"
-                >
-                  Paste Today's Schedule
-                </button>
-              </div>
-            )}
-          </Card>
-
-          {/* Field Assignments (Jira) */}
-          {jira && (jira.inProgress.length > 0 || jira.inReview.length > 0 || jira.todo.length > 0) && (
-            <Card variant="canvas">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <DashIcon src="/images/dashboard/assignments.png" alt="Assignments" fallback="&#x1F4CB;" size="w-24 h-24" />
+                <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                    Field Assignments
+                    Wellness
                   </h2>
-                </div>
-                <Link to="/jira">
-                  <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
-                    Full Board
-                  </span>
-                </Link>
-              </div>
-
-              <div className="space-y-4">
-                {/* In Progress */}
-                {jira.inProgress.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-ui uppercase text-jungle mb-2 tracking-wide">
-                      In Progress ({jira.inProgress.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {jira.inProgress.slice(0, 4).map((issue) => (
-                        <JiraItem key={issue.key} issue={issue} accent="jungle" />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* In Review */}
-                {jira.inReview.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-ui uppercase text-teal mb-2 tracking-wide">
-                      In Review ({jira.inReview.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {jira.inReview.slice(0, 3).map((issue) => (
-                        <JiraItem key={issue.key} issue={issue} accent="teal" />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* To Do (compact) */}
-                {jira.todo.length > 0 && (
-                  <div>
-                    <h3 className="text-sm font-ui uppercase text-mustard-dark mb-2 tracking-wide">
-                      Up Next ({jira.todo.length})
-                    </h3>
-                    <div className="space-y-2">
-                      {jira.todo.slice(0, 3).map((issue) => (
-                        <JiraItem key={issue.key} issue={issue} accent="mustard" />
-                      ))}
-                      {jira.todo.length > 3 && (
-                        <p className="text-xs text-vintage-text opacity-50 font-ui pl-4">
-                          + {jira.todo.length - 3} more in the backlog
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-        </div>
-
-        {/* Right Column: Intel + Actions */}
-        <div className="space-y-6">
-
-          {/* Wellness + Habits Card */}
-          <Card variant="canvas" className={wellness && advice ? getToneBg(advice.tone) : ''}>
-            {wellness && advice && (
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-24 h-24" />
-                    <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                      Wellness
-                    </h2>
-                  </div>
                   <Link to="/medic">
                     <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
                       Full Vitals
                     </span>
                   </Link>
                 </div>
-
-                {/* Scores Row */}
-                <div className="flex items-center justify-around mb-4">
-                  {wellness.readiness && (
-                    <div className="text-center">
-                      <div className={`text-4xl font-poster ${getToneColor(advice.tone)}`}>
-                        {wellness.readiness}
-                      </div>
-                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                        Readiness
-                      </div>
-                    </div>
-                  )}
-                  {wellness.sleep && (
-                    <div className="text-center">
-                      <div className="text-2xl font-poster text-vintage-text opacity-80">
-                        {wellness.sleep}
-                      </div>
-                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                        Sleep
-                        {wellness.sleepDuration && (
-                          <span className="block text-vintage-text opacity-50">
-                            {formatSleepDuration(wellness.sleepDuration)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  {wellness.activity && (
-                    <div className="text-center">
-                      <div className="text-2xl font-poster text-vintage-text opacity-80">
-                        {wellness.activity}
-                      </div>
-                      <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                        Activity
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Advice */}
-                <p className={`text-sm font-serif ${getToneColor(advice.tone)}`}>
-                  {advice.text}
-                </p>
-                {wellness.date === 'yesterday' && (
-                  <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
-                    Based on yesterday's data
-                  </p>
-                )}
-
-                {/* Divider before habits */}
-                <div className="h-px w-full bg-vintage-text opacity-20 my-4" />
               </div>
-            )}
 
-            {/* Daily Habits */}
-            <HabitTracker
-              habits={habitList}
-              completed={habitCompleted}
-              onToggle={handleToggleHabit}
-              onAdd={handleAddHabit}
-              onRemove={handleRemoveHabit}
-            />
-          </Card>
-
-          {/* On Deck Today (Recurring Agenda) */}
-          {briefing?.agendaItems?.length > 0 && (
-            <Card variant="canvas" className="border-jungle">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <DashIcon src="/images/dashboard/agenda.png" alt="Agenda" fallback="&#x1F4CB;" size="w-24 h-24" />
-                  <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                    On Deck Today
-                  </h2>
-                </div>
-                <Link to="/outbound-passage">
-                  <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
-                    Manage
-                  </span>
-                </Link>
-              </div>
-              <div className="space-y-2">
-                {briefing.agendaItems.map(item => (
-                  <div
-                    key={item.id}
-                    className="flex items-start gap-3 p-2 rounded-lg border-l-3 border-l-jungle bg-jungle bg-opacity-5"
-                  >
-                    <div className="min-w-0">
-                      <div className="font-serif text-sm text-vintage-text font-bold">
-                        {item.name}
-                      </div>
-                      {item.notes && (
-                        <div className="text-xs font-serif text-vintage-text opacity-60 mt-0.5">
-                          {item.notes}
-                        </div>
-                      )}
-                      <div className="text-xs font-ui text-vintage-text opacity-40 mt-0.5 capitalize">
-                        {item.recurrence}
-                      </div>
+              {/* Scores Row */}
+              <div className="flex items-center justify-around mb-4">
+                {wellness.readiness && (
+                  <div className="text-center">
+                    <div className={`text-4xl font-poster ${getToneColor(advice.tone)}`}>
+                      {wellness.readiness}
+                    </div>
+                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                      Readiness
                     </div>
                   </div>
-                ))}
+                )}
+                {wellness.sleep && (
+                  <div className="text-center">
+                    <div className="text-2xl font-poster text-vintage-text opacity-80">
+                      {wellness.sleep}
+                    </div>
+                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                      Sleep
+                      {wellness.sleepDuration && (
+                        <span className="block text-vintage-text opacity-50">
+                          {formatSleepDuration(wellness.sleepDuration)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {wellness.activity && (
+                  <div className="text-center">
+                    <div className="text-2xl font-poster text-vintage-text opacity-80">
+                      {wellness.activity}
+                    </div>
+                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                      Activity
+                    </div>
+                  </div>
+                )}
               </div>
-            </Card>
+
+              {/* Advice */}
+              <p className={`text-sm font-serif ${getToneColor(advice.tone)}`}>
+                {advice.text}
+              </p>
+              {wellness.date === 'yesterday' && (
+                <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
+                  Based on yesterday's data
+                </p>
+              )}
+
+              {/* Divider before habits */}
+              <div className="h-px w-full bg-vintage-text opacity-20 my-4" />
+            </div>
           )}
 
-          {/* Carry-Forward Notes */}
+          {/* Daily Habits */}
+          <HabitTracker
+            habits={habitList}
+            completed={habitCompleted}
+            onToggle={handleToggleHabit}
+            onAdd={handleAddHabit}
+            onRemove={handleRemoveHabit}
+          />
+        </Card>
+
+        {/* Row 1, Col 2: Trail Notes (or On Deck / No Data fallback) */}
+        <div className="space-y-6">
           {(lastRetro?.notesForTomorrow || todayPlan) && (
             <Card variant="canvas" className="border-mustard">
-              <div className="flex items-center gap-3 mb-3">
-                <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-24 h-24" />
+              <div className="text-center mb-4">
+                <div className="flex justify-center mb-2">
+                  <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-28 h-28" />
+                </div>
                 <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
                   Trail Notes
                 </h2>
@@ -630,10 +381,74 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Quick Actions */}
+          {/* On Deck Today (Recurring Agenda) */}
+          {briefing?.agendaItems?.length > 0 && (
+            <Card variant="canvas" className="border-jungle">
+              <div className="text-center mb-4">
+                <div className="flex justify-center mb-2">
+                  <DashIcon src="/images/dashboard/agenda.png" alt="Agenda" fallback="&#x1F4CB;" size="w-28 h-28" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
+                    On Deck Today
+                  </h2>
+                  <Link to="/outbound-passage">
+                    <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
+                      Manage
+                    </span>
+                  </Link>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {briefing.agendaItems.map(item => (
+                  <div
+                    key={item.id}
+                    className="flex items-start gap-3 p-2 rounded-lg border-l-3 border-l-jungle bg-jungle bg-opacity-5"
+                  >
+                    <div className="min-w-0">
+                      <div className="font-serif text-sm text-vintage-text font-bold">
+                        {item.name}
+                      </div>
+                      {item.notes && (
+                        <div className="text-xs font-serif text-vintage-text opacity-60 mt-0.5">
+                          {item.notes}
+                        </div>
+                      )}
+                      <div className="text-xs font-ui text-vintage-text opacity-40 mt-0.5 capitalize">
+                        {item.recurrence}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* No Data Fallback */}
+          {!wellness && !lastRetro && !todayPlan && (
+            <Card variant="canvas" className="border-terracotta-light">
+              <div className="text-center py-4">
+                <div className="text-3xl mb-2">&#x1F9ED;</div>
+                <p className="font-serif text-sm text-vintage-text opacity-70 mb-3">
+                  Your briefing gets richer as you use the system — connect Oura Ring, Outlook, and Jira in Settings to fill in the map.
+                </p>
+                <Link to="/settings">
+                  <Button variant="outline" size="sm">
+                    Configure Integrations
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          )}
+        </div>
+
+        {/* Row 1-3, Col 3: Base Camp (spans all rows) */}
+        <div className="lg:row-span-3 space-y-6">
           <Card variant="canvas">
-            <div className="flex items-center gap-3 mb-4">
-              <DashIcon src="/images/dashboard/base-camp.png" alt="Base Camp" fallback="&#x26FA;" size="w-24 h-24" />
+            <div className="text-center mb-4">
+              <div className="flex justify-center mb-2">
+                <DashIcon src="/images/dashboard/base-camp.png" alt="Base Camp" fallback="&#x26FA;" size="w-28 h-28" />
+              </div>
               <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
                 Base Camp
               </h2>
@@ -791,24 +606,237 @@ const Dashboard = () => {
               </div>
             </div>
           </Card>
+        </div>
 
-          {/* No Data Fallback */}
-          {!wellness && !lastRetro && !todayPlan && (
-            <Card variant="canvas" className="border-terracotta-light">
-              <div className="text-center py-4">
-                <div className="text-3xl mb-2">&#x1F9ED;</div>
-                <p className="font-serif text-sm text-vintage-text opacity-70 mb-3">
-                  Your briefing gets richer as you use the system — connect Oura Ring, Outlook, and Jira in Settings to fill in the map.
-                </p>
-                <Link to="/settings">
-                  <Button variant="outline" size="sm">
-                    Configure Integrations
-                  </Button>
+        {/* Row 2, Col 1-2: Today's Route (Calendar) */}
+        <div className="lg:col-span-2">
+          <Card variant="canvas">
+            {/* Banner Header */}
+            <div className="-mx-6 -mt-6 mb-5 rounded-t-[calc(0.5rem-1px)] overflow-hidden relative">
+              <img
+                src="/images/dashboard/calendar-banner.png"
+                alt="Today's Route"
+                className="w-full h-24 object-cover"
+                onError={(e) => { e.target.style.display = 'none'; }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-cream via-transparent to-cream opacity-40" />
+              <div className="absolute inset-0 bg-gradient-to-t from-cream via-transparent to-transparent opacity-60" />
+              <div className="absolute bottom-0 left-0 right-0 px-6 py-3 flex items-end justify-between">
+                <div>
+                  <h2 className="text-2xl font-poster text-vintage-text text-letterpress drop-shadow-sm">
+                    Today's Route
+                  </h2>
+                </div>
+                <Link to="/outbound-passage">
+                  <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark drop-shadow-sm">
+                    Full Calendar
+                  </span>
                 </Link>
               </div>
-            </Card>
-          )}
+            </div>
+
+            {briefing?.eventsSource === 'manual' && (
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-ui uppercase text-mustard-dark bg-mustard bg-opacity-10 px-2 py-0.5 rounded">
+                  Manually entered
+                </span>
+                <button
+                  onClick={() => setShowEventInput(true)}
+                  className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={clearManualEvents}
+                  className="text-xs font-ui text-vintage-text opacity-40 hover:opacity-70 uppercase"
+                >
+                  Clear
+                </button>
+              </div>
+            )}
+
+            {allDayEvents.length > 0 && (
+              <div className="mb-4">
+                {allDayEvents.map((event, i) => (
+                  <div key={i} className="inline-block mr-2 mb-2 px-3 py-1 rounded-full bg-jungle bg-opacity-10 border border-jungle text-sm font-ui text-jungle">
+                    {event.subject}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {showEventInput ? (
+              <div className="space-y-3">
+                <p className="text-sm font-serif text-vintage-text opacity-70">
+                  Paste your schedule below — one event per line. Times are optional.
+                </p>
+                <div className="text-xs font-ui text-vintage-text opacity-50 space-y-0.5">
+                  <p>Formats: <span className="font-mono">9:00 AM - 10:00 AM - Team Standup</span></p>
+                  <p>or: <span className="font-mono">2:30 PM - Design Review</span></p>
+                  <p>or just: <span className="font-mono">Sprint Planning</span> (all-day)</p>
+                </div>
+                <textarea
+                  value={eventInput}
+                  onChange={(e) => setEventInput(e.target.value)}
+                  placeholder={"9:00 AM - 9:30 AM - Morning Standup\n10:00 AM - 11:00 AM - Sprint Planning\n1:00 PM - Design Review\nCompany All-Hands"}
+                  className="w-full h-40 p-3 rounded-lg border-2 border-sand-dark bg-cream bg-opacity-50 font-mono text-sm text-vintage-text placeholder:text-vintage-text placeholder:opacity-30 focus:border-teal focus:outline-none resize-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={saveManualEvents}
+                    disabled={savingEvents || !eventInput.trim()}
+                    className="px-4 py-2 rounded-lg bg-teal text-cream font-ui text-sm uppercase tracking-wide hover:bg-teal-dark disabled:opacity-40 transition-colors"
+                  >
+                    {savingEvents ? 'Saving...' : 'Save Schedule'}
+                  </button>
+                  <button
+                    onClick={() => { setShowEventInput(false); setEventInput(''); }}
+                    className="px-4 py-2 rounded-lg border-2 border-sand-dark text-vintage-text font-ui text-sm uppercase tracking-wide hover:border-vintage-text transition-[border-color]"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : upcomingEvents.length > 0 ? (
+              <div className="space-y-3">
+                {upcomingEvents.slice(0, 6).map((event, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-4 p-3 rounded-lg border-l-4 ${getEventStatusStyle(event.showAs)}`}
+                  >
+                    <div className="flex-shrink-0 w-20 text-right">
+                      <div className="font-ui text-sm font-bold text-vintage-text">
+                        {formatTime(event.start)}
+                      </div>
+                      <div className="font-ui text-xs text-vintage-text opacity-50">
+                        {formatTime(event.end)}
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-serif text-vintage-text font-bold truncate">
+                        {event.subject}
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-vintage-text opacity-60 font-ui mt-1">
+                        {event.location && (
+                          <span className="truncate max-w-[200px]">{event.location}</span>
+                        )}
+                        {event.organizer && (
+                          <span>{event.organizer}</span>
+                        )}
+                        {event.attendeeCount > 0 && (
+                          <span>{event.attendeeCount} attendee{event.attendeeCount !== 1 ? 's' : ''}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {upcomingEvents.length > 6 && (
+                  <p className="text-sm text-vintage-text opacity-50 font-ui text-center pt-2">
+                    + {upcomingEvents.length - 6} more event{upcomingEvents.length - 6 !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
+            ) : events.length > 0 ? (
+              <div className="text-center py-6">
+                <CheckIcon size="w-10 h-10" className="mx-auto mb-2 text-jungle" />
+                <p className="text-vintage-text font-serif opacity-70">All done for today!</p>
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="text-3xl mb-2">&#x1F3DC;</div>
+                <p className="text-vintage-text font-serif opacity-70 mb-3">
+                  No calendar connected yet.
+                </p>
+                <button
+                  onClick={() => setShowEventInput(true)}
+                  className="px-4 py-2 rounded-lg bg-teal bg-opacity-10 border-2 border-teal text-teal font-ui text-sm uppercase tracking-wide hover:bg-teal hover:text-cream transition-colors"
+                >
+                  Paste Today's Schedule
+                </button>
+              </div>
+            )}
+          </Card>
         </div>
+
+        {/* Row 3, Col 1-2: Field Assignments (Jira) */}
+        {jira && (jira.inProgress.length > 0 || jira.inReview.length > 0 || jira.todo.length > 0) && (
+          <div className="lg:col-span-2">
+            <Card variant="canvas">
+              {/* Banner Header */}
+              <div className="-mx-6 -mt-6 mb-5 rounded-t-[calc(0.5rem-1px)] overflow-hidden relative">
+                <img
+                  src="/images/dashboard/assignments-banner.png"
+                  alt="Field Assignments"
+                  className="w-full h-24 object-cover"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-cream via-transparent to-cream opacity-40" />
+                <div className="absolute inset-0 bg-gradient-to-t from-cream via-transparent to-transparent opacity-60" />
+                <div className="absolute bottom-0 left-0 right-0 px-6 py-3 flex items-end justify-between">
+                  <div>
+                    <h2 className="text-2xl font-poster text-vintage-text text-letterpress drop-shadow-sm">
+                      Field Assignments
+                    </h2>
+                  </div>
+                  <Link to="/jira">
+                    <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark drop-shadow-sm">
+                      Full Board
+                    </span>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {/* In Progress */}
+                {jira.inProgress.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-ui uppercase text-jungle mb-2 tracking-wide">
+                      In Progress ({jira.inProgress.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {jira.inProgress.slice(0, 4).map((issue) => (
+                        <JiraItem key={issue.key} issue={issue} accent="jungle" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* In Review */}
+                {jira.inReview.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-ui uppercase text-teal mb-2 tracking-wide">
+                      In Review ({jira.inReview.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {jira.inReview.slice(0, 3).map((issue) => (
+                        <JiraItem key={issue.key} issue={issue} accent="teal" />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* To Do (compact) */}
+                {jira.todo.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-ui uppercase text-mustard-dark mb-2 tracking-wide">
+                      Up Next ({jira.todo.length})
+                    </h3>
+                    <div className="space-y-2">
+                      {jira.todo.slice(0, 3).map((issue) => (
+                        <JiraItem key={issue.key} issue={issue} accent="mustard" />
+                      ))}
+                      {jira.todo.length > 3 && (
+                        <p className="text-xs text-vintage-text opacity-50 font-ui pl-4">
+                          + {jira.todo.length - 3} more in the backlog
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
