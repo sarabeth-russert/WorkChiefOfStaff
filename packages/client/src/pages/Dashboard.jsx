@@ -252,7 +252,7 @@ const Dashboard = () => {
             <div>
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-2">
-                  <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-28 h-28" />
+                  <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-36 h-36" />
                 </div>
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
@@ -336,7 +336,7 @@ const Dashboard = () => {
             <Card variant="canvas" className="border-mustard">
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-2">
-                  <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-28 h-28" />
+                  <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-36 h-36" />
                 </div>
                 <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
                   Trail Notes
@@ -386,7 +386,7 @@ const Dashboard = () => {
             <Card variant="canvas" className="border-jungle">
               <div className="text-center mb-4">
                 <div className="flex justify-center mb-2">
-                  <DashIcon src="/images/dashboard/agenda.png" alt="Agenda" fallback="&#x1F4CB;" size="w-28 h-28" />
+                  <DashIcon src="/images/dashboard/agenda.png" alt="Agenda" fallback="&#x1F4CB;" size="w-36 h-36" />
                 </div>
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
@@ -447,7 +447,7 @@ const Dashboard = () => {
           <Card variant="canvas">
             <div className="text-center mb-4">
               <div className="flex justify-center mb-2">
-                <DashIcon src="/images/dashboard/base-camp.png" alt="Base Camp" fallback="&#x26FA;" size="w-28 h-28" />
+                <DashIcon src="/images/dashboard/base-camp.png" alt="Base Camp" fallback="&#x26FA;" size="w-36 h-36" />
               </div>
               <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
                 Base Camp
