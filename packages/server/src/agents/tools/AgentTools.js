@@ -4,6 +4,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import logger from '../../config/logger.js';
 import knowledgeStore from '../../brain/KnowledgeStore.js';
+import appRegistry from '../../processes/AppRegistry.js';
 
 const execAsync = promisify(exec);
 
@@ -29,6 +30,41 @@ class AgentTools {
   isPathAllowed(filePath) {
     // Allow all paths - agents need full access to do their work
     return true;
+  }
+
+  /**
+   * Resolve a file path, supporting project shorthand (e.g., "grace:src/App.jsx")
+   * Falls back to absolute or baseDir-relative resolution.
+   */
+  resolvePath(filePath) {
+    // Check for project shorthand: "projectname:relative/path"
+    const shorthandMatch = filePath.match(/^([^:]+):(.+)$/);
+    if (shorthandMatch) {
+      const projectName = shorthandMatch[1];
+      const relativePath = shorthandMatch[2];
+
+      // Don't match Windows drive letters (e.g., C:\)
+      if (projectName.length > 1) {
+        const apps = appRegistry.getAllApps();
+        const app = apps.find(a =>
+          a.pm2Name.toLowerCase() === projectName.toLowerCase() ||
+          a.name.toLowerCase() === projectName.toLowerCase()
+        );
+        if (app && app.cwd) {
+          const resolved = path.join(app.cwd, relativePath);
+          logger.info('Resolved project shorthand path', { original: filePath, resolved, project: app.name });
+          return resolved;
+        }
+      }
+    }
+
+    // Absolute path — use as-is
+    if (path.isAbsolute(filePath)) {
+      return filePath;
+    }
+
+    // Relative path — join with base directory
+    return path.join(this.baseDir, filePath);
   }
 
   /**
@@ -241,20 +277,7 @@ class AgentTools {
    * Read a file
    */
   async readFile(filePath) {
-    // Handle both absolute and relative paths
-    let fullPath;
-    if (path.isAbsolute(filePath)) {
-      // Already absolute - use as-is
-      fullPath = filePath;
-    } else {
-      // Relative path - join with base directory
-      fullPath = path.join(this.baseDir, filePath);
-    }
-
-    // Path check disabled - agents have full access
-    // if (!this.isPathAllowed(fullPath)) {
-    //   throw new Error(`Access denied: ${filePath} is outside allowed directories`);
-    // }
+    const fullPath = this.resolvePath(filePath);
 
     if (!fs.existsSync(fullPath)) {
       throw new Error(`File not found: ${fullPath} (original: ${filePath})`);
@@ -276,18 +299,7 @@ class AgentTools {
    * Write a file
    */
   async writeFile(filePath, content) {
-    // Handle both absolute and relative paths
-    let fullPath;
-    if (path.isAbsolute(filePath)) {
-      fullPath = filePath;
-    } else {
-      fullPath = path.join(this.baseDir, filePath);
-    }
-
-    // Path check disabled - agents have full access
-    // if (!this.isPathAllowed(fullPath)) {
-    //   throw new Error(`Access denied: ${filePath} is outside allowed directories`);
-    // }
+    const fullPath = this.resolvePath(filePath);
 
     // Ensure directory exists
     const dir = path.dirname(fullPath);
@@ -309,18 +321,7 @@ class AgentTools {
    * Edit a file by replacing text
    */
   async editFile(filePath, oldText, newText) {
-    // Handle both absolute and relative paths
-    let fullPath;
-    if (path.isAbsolute(filePath)) {
-      fullPath = filePath;
-    } else {
-      fullPath = path.join(this.baseDir, filePath);
-    }
-
-    // Path check disabled - agents have full access
-    // if (!this.isPathAllowed(fullPath)) {
-    //   throw new Error(`Access denied: ${filePath} is outside allowed directories`);
-    // }
+    const fullPath = this.resolvePath(filePath);
 
     if (!fs.existsSync(fullPath)) {
       throw new Error(`File not found: ${fullPath} (original: ${filePath})`);
@@ -356,18 +357,7 @@ class AgentTools {
    * List directory contents
    */
   async listDirectory(dirPath, recursive = false) {
-    // Handle both absolute and relative paths
-    let fullPath;
-    if (path.isAbsolute(dirPath)) {
-      fullPath = dirPath;
-    } else {
-      fullPath = path.join(this.baseDir, dirPath);
-    }
-
-    // Path check disabled - agents have full access
-    // if (!this.isPathAllowed(fullPath)) {
-    //   throw new Error(`Access denied: ${dirPath} is outside allowed directories`);
-    // }
+    const fullPath = this.resolvePath(dirPath);
 
     if (!fs.existsSync(fullPath)) {
       throw new Error(`Directory not found: ${dirPath}`);
@@ -417,18 +407,7 @@ class AgentTools {
    * Search code using grep
    */
   async searchCode(pattern, directory, fileExtension = '') {
-    // Handle both absolute and relative paths
-    let fullPath;
-    if (path.isAbsolute(directory)) {
-      fullPath = directory;
-    } else {
-      fullPath = path.join(this.baseDir, directory);
-    }
-
-    // Path check disabled - agents have full access
-    // if (!this.isPathAllowed(fullPath)) {
-    //   throw new Error(`Access denied: ${directory} is outside allowed directories`);
-    // }
+    const fullPath = this.resolvePath(directory);
 
     // Build grep command
     let cmd = `grep -r -n "${pattern}" "${fullPath}"`;

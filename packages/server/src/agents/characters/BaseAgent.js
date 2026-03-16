@@ -6,6 +6,7 @@ import fetch from 'node-fetch';
 import * as cheerio from 'cheerio';
 import TurndownService from 'turndown';
 import agentTools from '../tools/AgentTools.js';
+import appRegistry from '../../processes/AppRegistry.js';
 
 class BaseAgent {
   constructor(options = {}) {
@@ -84,13 +85,28 @@ class BaseAgent {
 
     const personality = this.customPrompt?.prompts?.personality || this.personality;
 
+    // Build workspace context from registered apps
+    const registeredApps = appRegistry.getAllApps();
+    const appsWithPaths = registeredApps.filter(app => app.cwd);
+    let workspaceContext = '';
+    if (appsWithPaths.length > 0) {
+      workspaceContext = `\n## Registered Workspaces
+
+The user works on these projects. You can access their files using the project shorthand (e.g., "projectname:src/file.js") or absolute paths.
+
+${appsWithPaths.map(app => `- **${app.name}** (shorthand: \`${app.pm2Name}\`) — ${app.description || 'No description'}\n  Path: \`${app.cwd}\``).join('\n')}
+
+When the user asks about a registered project by name, use that project's path to read and modify files. You can use the shorthand prefix (e.g., \`${appsWithPaths[0].pm2Name}:src/components/App.jsx\`) with any file tool.
+`;
+    }
+
     return `You are ${this.name}, an AI agent in Chief of Staff — a personal productivity app with a vintage 1950s-60s Adventureland theme. "COS" = "Chief of Staff" = this application.
 
 ROLE: ${this.role}
 PERSONALITY: ${personality}
 SKILLS: ${this.skills.join(', ')}
 
-## Project Context
+## COS Project Context
 
 This is a JavaScript/React monorepo. Know these paths:
 
@@ -106,7 +122,7 @@ BACKEND (packages/server/):
 - Knowledge base: packages/server/src/brain/ (KnowledgeStore, VectorSearch)
 
 Key integrations: Jira (task tracking), Outlook (calendar), Oura Ring (wellness/sleep), AI agents (Claude-powered).
-
+${workspaceContext}
 ## How to Work
 
 Use your tools to take action. Read files before modifying them. Explain what you did after.
