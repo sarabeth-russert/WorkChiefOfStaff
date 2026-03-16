@@ -3,6 +3,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import logger from '../../config/logger.js';
+import knowledgeStore from '../../brain/KnowledgeStore.js';
 
 const execAsync = promisify(exec);
 
@@ -142,6 +143,28 @@ class AgentTools {
           },
           required: ['command']
         }
+      },
+      {
+        name: 'search_knowledge',
+        description: 'Search the user\'s knowledge base (Map Room / second brain) for notes, saved information, and prior research. Use this to find context the user has previously saved.',
+        input_schema: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query to find relevant knowledge entries'
+            },
+            category: {
+              type: 'string',
+              description: 'Optional category to filter results (e.g., "agent-responses", "general")'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results to return (default: 5)'
+            }
+          },
+          required: ['query']
+        }
       }
     ];
   }
@@ -187,6 +210,9 @@ class AgentTools {
 
         case 'run_command':
           return await this.runCommand(toolInput.command);
+
+        case 'search_knowledge':
+          return await this.searchKnowledge(toolInput.query, toolInput.category, toolInput.limit);
 
         default:
           throw new Error(`Unknown tool: ${toolName} (mapped to: ${mappedName})`);
@@ -495,6 +521,48 @@ class AgentTools {
         stdout: error.stdout || '',
         stderr: error.stderr || error.message,
         exit_code: error.code || 1
+      };
+    }
+  }
+  /**
+   * Search the knowledge base (Map Room)
+   */
+  async searchKnowledge(query, category, limit = 5) {
+    logger.info('Agent searching knowledge base', { query, category, limit });
+
+    try {
+      const results = knowledgeStore.searchItems(query);
+
+      let filtered = results;
+      if (category) {
+        filtered = filtered.filter(item => item.category === category);
+      }
+
+      const limited = filtered.slice(0, limit).map(item => ({
+        id: item.id,
+        title: item.title,
+        content: item.content.length > 500 ? item.content.substring(0, 500) + '...' : item.content,
+        category: item.category,
+        tags: item.tags,
+        type: item.type,
+        createdAt: item.createdAt
+      }));
+
+      return {
+        success: true,
+        query,
+        results: limited,
+        count: limited.length,
+        totalMatches: filtered.length
+      };
+    } catch (error) {
+      logger.error('Knowledge search failed', { query, error: error.message });
+      return {
+        success: false,
+        query,
+        results: [],
+        count: 0,
+        error: error.message
       };
     }
   }

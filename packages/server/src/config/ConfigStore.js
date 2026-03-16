@@ -20,19 +20,19 @@ class ConfigStore {
         'claude-cli': {
           type: 'claude-cli',
           cliPath: 'claude',
-          modelId: 'claude-3-5-sonnet-20241022',
+          modelId: 'claude-sonnet-4-6',
           enabled: true
         },
         bedrock: {
           type: 'bedrock',
           region: 'us-east-1',
-          modelId: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+          modelId: 'us.anthropic.claude-sonnet-4-6-v1:0',
           enabled: true
         },
         anthropic: {
           type: 'anthropic',
           apiKey: null, // Set from env or UI
-          modelId: 'claude-3-5-sonnet-20241022',
+          modelId: 'claude-sonnet-4-6',
           enabled: false
         }
       },
@@ -45,8 +45,8 @@ class ConfigStore {
         guide: { modelId: null, maxTokens: null }
       },
       globalSettings: {
-        defaultMaxTokens: 4096,
-        defaultTemperature: 1.0,
+        defaultMaxTokens: 8192,
+        defaultTemperature: 0.4,
         streamingEnabled: true
       }
     };
@@ -124,7 +124,7 @@ class ConfigStore {
       return {
         type: 'claude-cli',
         cliPath: 'claude',
-        modelId: 'claude-3-5-sonnet-20241022',
+        modelId: 'claude-sonnet-4-6',
         enabled: true
       };
     }
@@ -144,7 +144,7 @@ class ConfigStore {
    */
   getCurrentModel() {
     if (!this.config) {
-      return 'claude-3-5-sonnet-20241022';
+      return 'claude-sonnet-4-6';
     }
     const provider = this.getCurrentProvider();
     return provider.modelId;
@@ -246,8 +246,8 @@ class ConfigStore {
   getGlobalSettings() {
     if (!this.config) {
       return {
-        defaultMaxTokens: 4096,
-        defaultTemperature: 1.0,
+        defaultMaxTokens: 8192,
+        defaultTemperature: 0.4,
         streamingEnabled: true
       };
     }
