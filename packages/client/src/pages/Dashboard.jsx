@@ -678,7 +678,7 @@ const Dashboard = () => {
                 <textarea
                   value={eventInput}
                   onChange={(e) => setEventInput(e.target.value)}
-                  placeholder={"9:00 AM - 9:30 AM - Morning Standup\n10:00 AM - 11:00 AM - Sprint Planning\n1:00 PM - Design Review\nCompany All-Hands"}
+                  placeholder={"9:00 AM - 9:30 AM - Morning Standup\n10:00AM-11:00AM Sprint Planning\nDesign Review - 1:00 PM - 2:00 PM\nCompany All-Hands"}
                   className="w-full h-40 p-3 rounded-lg border-2 border-sand-dark bg-cream bg-opacity-50 font-mono text-sm text-vintage-text placeholder:text-vintage-text placeholder:opacity-30 focus:border-teal focus:outline-none resize-none"
                 />
                 <div className="flex gap-2">

@@ -1817,22 +1817,26 @@ function getManualEventsPath(dateStr) {
 function parseEventText(text) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
   const events = [];
+  // Match a full time token: "9:30AM", "9:30 AM", "9AM", "14:00", etc.
+  const TIME_TOKEN = /\d{1,2}(?::\d{2})?\s*(?:am|pm)/gi;
 
   for (const line of lines) {
-    // Try parsing "HH:MM AM - HH:MM PM - Subject" or "HH:MM AM - Subject"
-    const timeRangeMatch = line.match(
-      /^(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–]\s*(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–:]\s*(.+)/i
-    );
-    const singleTimeMatch = line.match(
-      /^(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\s*[-–:]\s*(.+)/i
-    );
+    const timeMatches = [...line.matchAll(TIME_TOKEN)];
 
-    if (timeRangeMatch) {
-      const startStr = timeRangeMatch[1].trim();
-      const endStr = timeRangeMatch[2].trim();
-      const subject = timeRangeMatch[3].trim();
+    if (timeMatches.length >= 2) {
+      // Two times found — treat as start and end
+      const startStr = timeMatches[0][0].trim();
+      const endStr = timeMatches[1][0].trim();
+      // Subject is everything outside the time tokens and separators
+      const subject = line
+        .replace(timeMatches[0][0], '')
+        .replace(timeMatches[1][0], '')
+        .replace(/^\s*[-–:]\s*|\s*[-–:]\s*$/g, '')
+        .replace(/\s*[-–:]\s*[-–:]\s*/g, ' ')
+        .replace(/\s*[-–]\s*/g, ' ')
+        .trim();
       events.push({
-        subject,
+        subject: subject || 'Untitled',
         start: parseTimeToISO(startStr),
         end: parseTimeToISO(endStr),
         location: null,
@@ -1842,14 +1846,17 @@ function parseEventText(text) {
         attendeeCount: 0,
         source: 'manual',
       });
-    } else if (singleTimeMatch) {
-      const startStr = singleTimeMatch[1].trim();
-      const subject = singleTimeMatch[2].trim();
+    } else if (timeMatches.length === 1) {
+      // One time found — use as start, default 30min duration
+      const startStr = timeMatches[0][0].trim();
+      const subject = line
+        .replace(timeMatches[0][0], '')
+        .replace(/^\s*[-–:]\s*|\s*[-–:]\s*$/g, '')
+        .trim();
       const start = parseTimeToISO(startStr);
-      // Default 30min duration
       const end = new Date(new Date(start).getTime() + 30 * 60 * 1000).toISOString();
       events.push({
-        subject,
+        subject: subject || 'Untitled',
         start,
         end,
         location: null,
