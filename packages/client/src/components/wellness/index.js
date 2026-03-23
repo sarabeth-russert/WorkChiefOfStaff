@@ -5,3 +5,4 @@ export { default as OuraSetup } from './OuraSetup';
 export { default as MessageBubble } from './MessageBubble';
 export { default as SessionJournalEntry } from './SessionJournalEntry';
 export { default as WellnessSessionPanel } from './WellnessSessionPanel';
+export { default as WeeklyInsightsCard } from './WeeklyInsightsCard';

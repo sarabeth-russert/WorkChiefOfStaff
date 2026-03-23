@@ -265,6 +265,14 @@ class WellnessScheduler {
     if (this.jobs.ouraSync) this.jobs.ouraSync.start();
 
     logger.info('[WellnessScheduler] All wellness jobs started successfully');
+
+    // Run an initial Oura sync so data is available immediately
+    if (this.callbacks.onOuraSync) {
+      this.callbacks.onOuraSync().catch(err =>
+        logger.error('[WellnessScheduler] Initial Oura sync failed', { error: err.message })
+      );
+    }
+
     return true;
   }
 

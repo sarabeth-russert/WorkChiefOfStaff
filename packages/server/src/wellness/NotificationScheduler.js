@@ -129,6 +129,8 @@ class NotificationScheduler {
     const { id, message, cronExpression, endTime } = notification;
 
     const job = cron.schedule(cronExpression, async () => {
+      logger.info('[NotificationScheduler] Cron fired', { id, message: message.substring(0, 50) });
+
       // Check if we've passed the end time
       if (endTime) {
         const now = new Date();
@@ -141,6 +143,8 @@ class NotificationScheduler {
       }
 
       await this.emitNotification(id, message);
+    }, {
+      timezone: 'America/Los_Angeles'
     });
 
     job.start();
@@ -156,19 +160,22 @@ class NotificationScheduler {
    * Emit a notification via Socket.IO
    */
   async emitNotification(id, message) {
-    if (this.io) {
-      this.io.emit('wellness:notification', {
-        id,
-        type: 'scheduled',
-        message,
-        timestamp: new Date().toISOString()
-      });
-
-      logger.info('[NotificationScheduler] Emitted notification', {
-        id,
-        message: message.substring(0, 50)
-      });
+    if (!this.io) {
+      logger.error('[NotificationScheduler] Cannot emit notification — Socket.IO not set', { id });
+      return;
     }
+
+    this.io.emit('wellness:notification', {
+      id,
+      type: 'scheduled',
+      message,
+      timestamp: new Date().toISOString()
+    });
+
+    logger.info('[NotificationScheduler] Emitted notification', {
+      id,
+      notificationMessage: message.substring(0, 50)
+    });
   }
 
   /**

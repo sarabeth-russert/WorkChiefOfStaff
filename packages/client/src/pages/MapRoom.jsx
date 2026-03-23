@@ -17,6 +17,7 @@ const MapRoom = () => {
     search,
     addItem,
     deleteItem,
+    updateItem,
     clearSearch,
     clearError
   } = useKnowledgeStore();
@@ -211,7 +212,7 @@ const MapRoom = () => {
               key={item.id}
               item={item}
               onDelete={handleDelete}
-              onEdit={(item) => alert('Edit functionality coming soon!')}
+              onEdit={(updatedItem) => updateItem(updatedItem.id, updatedItem)}
             />
           ))}
         </div>

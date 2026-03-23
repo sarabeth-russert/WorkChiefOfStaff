@@ -796,6 +796,7 @@ import ouraManager from '../integrations/OuraManager.js';
 import wellnessDataStore from '../wellness/WellnessDataStore.js';
 import wellnessScheduler from '../wellness/WellnessScheduler.js';
 import wellnessMeetings from '../wellness/WellnessMeetings.js';
+import weeklyInsights from '../wellness/WeeklyInsights.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
 
 router.post('/wellness/configure', (req, res) => {
@@ -839,6 +840,19 @@ router.get('/wellness/trends', async (req, res) => {
     res.json({ success: true, trends, startDate, endDate, days });
   } catch (error) {
     logger.error('Error fetching wellness trends', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get('/wellness/weekly-insights', async (req, res) => {
+  try {
+    const endDate = req.query.endDate || new Date().toISOString().split('T')[0];
+    const days = parseInt(req.query.days) || 7;
+
+    const insights = await weeklyInsights.generateInsights(endDate, days);
+    res.json({ success: true, insights });
+  } catch (error) {
+    logger.error('Error generating weekly insights', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -2009,26 +2023,45 @@ router.get('/briefing', async (req, res) => {
   }
 
   // Wellness - try today, fall back to yesterday
+  const extractWellness = (m, dateLabel) => ({
+    date: dateLabel,
+    readiness: m.readiness?.data?.[0]?.score ?? null,
+    sleep: m.sleep?.data?.[0]?.score ?? null,
+    activity: m.activity?.data?.[0]?.score ?? null,
+    sleepDuration: m.sleep?.data?.[0]?.total_sleep ?? null,
+    contributors: m.readiness?.data?.[0]?.contributors ?? null,
+  });
+
   if (wellnessResult.status === 'fulfilled' && wellnessResult.value?.metrics) {
-    const m = wellnessResult.value.metrics;
-    briefing.wellness = {
-      date: 'today',
-      readiness: m.readiness?.data?.[0]?.score ?? null,
-      sleep: m.sleep?.data?.[0]?.score ?? null,
-      activity: m.activity?.data?.[0]?.score ?? null,
-      sleepDuration: m.sleep?.data?.[0]?.total_sleep ?? null,
-      contributors: m.readiness?.data?.[0]?.contributors ?? null,
-    };
+    briefing.wellness = extractWellness(wellnessResult.value.metrics, 'today');
   } else if (yesterdayResult.status === 'fulfilled' && yesterdayResult.value?.metrics) {
-    const m = yesterdayResult.value.metrics;
-    briefing.wellness = {
-      date: 'yesterday',
-      readiness: m.readiness?.data?.[0]?.score ?? null,
-      sleep: m.sleep?.data?.[0]?.score ?? null,
-      activity: m.activity?.data?.[0]?.score ?? null,
-      sleepDuration: m.sleep?.data?.[0]?.total_sleep ?? null,
-      contributors: m.readiness?.data?.[0]?.contributors ?? null,
-    };
+    briefing.wellness = extractWellness(yesterdayResult.value.metrics, 'yesterday');
+  }
+
+  // If Oura is configured but all scores are null, trigger a background sync
+  // and retry reading the data so the first load of the day isn't empty
+  if (
+    ouraManager.isConfigured() &&
+    briefing.wellness &&
+    !briefing.wellness.readiness && !briefing.wellness.sleep && !briefing.wellness.activity
+  ) {
+    try {
+      await wellnessMeetings.syncOuraData();
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      const freshToday = await wellnessDataStore.getDailyMetrics(today);
+      if (freshToday?.metrics) {
+        briefing.wellness = extractWellness(freshToday.metrics, 'today');
+      }
+      if (!briefing.wellness.readiness && !briefing.wellness.sleep) {
+        const freshYesterday = await wellnessDataStore.getDailyMetrics(yesterday);
+        if (freshYesterday?.metrics) {
+          briefing.wellness = extractWellness(freshYesterday.metrics, 'yesterday');
+        }
+      }
+    } catch (err) {
+      logger.error('Briefing: on-demand Oura sync failed', { error: err.message });
+    }
   }
 
   // Calendar events - sorted by start time, upcoming only

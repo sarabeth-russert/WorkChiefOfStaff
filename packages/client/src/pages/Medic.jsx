@@ -10,6 +10,7 @@ import SleepContributors from '../components/wellness/SleepContributors';
 import OuraScoreChart from '../components/wellness/OuraScoreChart';
 import ScoreGauge from '../components/wellness/ScoreGauge';
 import HeartRateInfo from '../components/wellness/HeartRateInfo';
+import BreathingTimer from '../components/wellness/BreathingTimer';
 
 const Medic = () => {
   const [wellnessData, setWellnessData] = useState(null);
@@ -18,6 +19,7 @@ const Medic = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
+  const [showTimer, setShowTimer] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
 
@@ -191,6 +193,22 @@ const Medic = () => {
           </p>
         </div>
       </div>
+
+      {/* Breathing Timer Button */}
+      <div className="flex justify-center -mt-4">
+        <button
+          onClick={() => setShowTimer(true)}
+          className="flex items-center gap-3 px-6 py-3 rounded-lg border-3 border-teal bg-teal bg-opacity-10 hover:bg-opacity-20 transition-colors shadow-vintage"
+        >
+          <span className="text-2xl">&#x23F1;</span>
+          <span className="font-ui uppercase text-sm text-teal tracking-wide font-bold">
+            Breathing Timer
+          </span>
+        </button>
+      </div>
+
+      {/* Breathing Timer Modal */}
+      {showTimer && <BreathingTimer onClose={() => setShowTimer(false)} />}
 
       {/* Error Display */}
       {error && (

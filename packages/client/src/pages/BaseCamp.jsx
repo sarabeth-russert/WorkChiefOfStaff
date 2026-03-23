@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Card, Loading } from '../components/ui';
 import Button from '../components/ui/Button';
-import { SessionJournalEntry } from '../components/wellness';
+import { SessionJournalEntry, WeeklyInsightsCard } from '../components/wellness';
 
 const BaseCamp = () => {
   const [sessionHistory, setSessionHistory] = useState([]);
@@ -176,6 +176,11 @@ const BaseCamp = () => {
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Weekly Insights */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <WeeklyInsightsCard />
       </div>
 
       {/* Session Journal with Archive Sidebar */}

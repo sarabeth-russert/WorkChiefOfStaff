@@ -2,6 +2,34 @@ import React, { useState } from 'react';
 import { Card, Button } from '../ui';
 
 const KnowledgeCard = ({ item, onDelete, onEdit }) => {
+  const [editing, setEditing] = useState(false);
+  const [editData, setEditData] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const startEdit = () => {
+    setEditData({
+      title: item.title,
+      content: item.content,
+      category: item.category,
+      tags: (item.tags || []).join(', '),
+    });
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const tags = editData.tags
+        .split(',')
+        .map(t => t.trim())
+        .filter(t => t.length > 0);
+      await onEdit({ ...item, ...editData, tags });
+      setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const typeIcons = {
     note: '📝',
     code: '💻',
@@ -34,6 +62,61 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
 
   const [expanded, setExpanded] = useState(false);
   const isLong = item.content && item.content.length > 200;
+
+  if (editing) {
+    return (
+      <Card variant="canvas" className="border-teal">
+        <div className="space-y-3">
+          <input
+            type="text"
+            value={editData.title}
+            onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+            className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-poster text-lg text-vintage-text focus:border-teal focus:outline-none"
+          />
+          <textarea
+            value={editData.content}
+            onChange={(e) => setEditData({ ...editData, content: e.target.value })}
+            rows={6}
+            className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-serif text-sm text-vintage-text focus:border-teal focus:outline-none resize-none"
+          />
+          <div>
+            <label className="block text-xs font-ui uppercase text-vintage-text opacity-60 mb-1">Category</label>
+            <select
+              value={editData.category}
+              onChange={(e) => setEditData({ ...editData, category: e.target.value })}
+              className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-serif text-sm text-vintage-text focus:border-teal focus:outline-none"
+            >
+              <option value="general">General</option>
+              <option value="code">Code</option>
+              <option value="documentation">Documentation</option>
+              <option value="tutorial">Tutorial</option>
+              <option value="reference">Reference</option>
+              <option value="note">Note</option>
+              <option value="idea">Idea</option>
+              <option value="link">Link</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-ui uppercase text-vintage-text opacity-60 mb-1">Tags (comma-separated)</label>
+            <input
+              type="text"
+              value={editData.tags}
+              onChange={(e) => setEditData({ ...editData, tags: e.target.value })}
+              className="w-full px-3 py-2 rounded border-2 border-sand-dark bg-cream bg-opacity-50 font-serif text-sm text-vintage-text focus:border-teal focus:outline-none"
+            />
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" size="sm" onClick={() => setEditing(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button variant="secondary" size="sm" onClick={handleSave} disabled={saving || !editData.title.trim()}>
+              {saving ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card
@@ -99,7 +182,7 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onEdit(item)}
+          onClick={startEdit}
         >
           Edit
         </Button>

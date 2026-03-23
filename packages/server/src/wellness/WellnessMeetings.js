@@ -4,6 +4,7 @@ import wellnessDataStore from './WellnessDataStore.js';
 import orchestrator from '../agents/AgentOrchestrator.js';
 import outlookManager from '../integrations/OutlookManager.js';
 import agendaStore from '../habits/AgendaStore.js';
+import weeklyInsights from './WeeklyInsights.js';
 import fs from 'fs/promises';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
@@ -315,6 +316,39 @@ ${agendaItems.map(item => `- ${item.name}${item.notes ? ` — ${item.notes}` : '
         }
       } catch (err) {
         logger.debug('[WellnessMeetings] Could not load agenda items', { error: err.message });
+      }
+
+      // Include weekly insights on Mondays or when patterns are detected
+      try {
+        const dayOfWeek = new Date().toLocaleDateString('en-US', {
+          weekday: 'long',
+          timeZone: this._getTimezone()
+        });
+        const isMonday = dayOfWeek === 'Monday';
+        const yesterday = this.getYesterdayDate();
+        const insights = await weeklyInsights.generateInsights(yesterday);
+        const insightsSummary = weeklyInsights.formatForStandup(insights);
+
+        if (insightsSummary) {
+          if (isMonday) {
+            initialPrompt += `
+**Weekly Review:**
+${insightsSummary}
+`;
+          } else if (insights.moodPatterns.alerts.length > 0 || insights.recurringBlockers.length > 0) {
+            // Surface alerts any day they're detected
+            const alertLines = [];
+            for (const alert of insights.moodPatterns.alerts) alertLines.push(`- ${alert}`);
+            for (const b of insights.recurringBlockers) alertLines.push(`- Recurring blocker: "${b.theme}" (${b.occurrences}x this week)`);
+            initialPrompt += `
+**Patterns Noticed This Week:**
+${alertLines.join('\n')}
+
+`;
+          }
+        }
+      } catch (err) {
+        logger.debug('[WellnessMeetings] Could not generate weekly insights for standup', { error: err.message });
       }
 
       initialPrompt += `
