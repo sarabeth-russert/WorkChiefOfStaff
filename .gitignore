@@ -52,3 +52,4 @@ packages/data/prompts/
 # Temp
 .temp/
 .cache/
+.envrc
