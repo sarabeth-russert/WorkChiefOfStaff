@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button } from '../ui';
 
-const KnowledgeCard = ({ item, onDelete, onEdit }) => {
+const KnowledgeCard = ({ item, onDelete, onEdit, onExpand }) => {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -60,7 +60,6 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
     });
   };
 
-  const [expanded, setExpanded] = useState(false);
   const isLong = item.content && item.content.length > 200;
 
   if (editing) {
@@ -139,15 +138,15 @@ const KnowledgeCard = ({ item, onDelete, onEdit }) => {
         )}
       </div>
 
-      <p className={`text-sm text-vintage-text mb-1 whitespace-pre-wrap ${expanded ? '' : 'line-clamp-3'}`}>
+      <p className="text-sm text-vintage-text mb-1 whitespace-pre-wrap line-clamp-3">
         {item.content}
       </p>
       {isLong && (
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => onExpand(item)}
           className="text-xs font-ui text-terracotta hover:text-terracotta-dark uppercase mb-3"
         >
-          {expanded ? 'Show less' : 'Show more'}
+          Show more
         </button>
       )}
       {!isLong && <div className="mb-3" />}

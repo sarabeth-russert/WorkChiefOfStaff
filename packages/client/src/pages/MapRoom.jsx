@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Card, Button, Input } from '../components/ui';
 import useKnowledgeStore from '../stores/knowledgeStore';
 import KnowledgeCard from '../components/knowledge/KnowledgeCard';
@@ -24,6 +24,14 @@ const MapRoom = () => {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [localSearchQuery, setLocalSearchQuery] = useState('');
+  const [expandedItem, setExpandedItem] = useState(null);
+  const expandedPanelRef = useRef(null);
+
+  useEffect(() => {
+    if (expandedItem && expandedPanelRef.current) {
+      expandedPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [expandedItem]);
 
   useEffect(() => {
     fetchItems();
@@ -187,6 +195,42 @@ const MapRoom = () => {
         </div>
       )}
 
+      {/* Expanded Item Panel */}
+      {expandedItem && (
+        <div ref={expandedPanelRef}>
+        <Card variant="canvas" className={`w-full border-teal`}>
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-2xl font-poster text-vintage-text">
+                {expandedItem.title}
+              </h3>
+              <span className="font-ui uppercase text-xs text-vintage-text opacity-70">
+                {expandedItem.category}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => setExpandedItem(null)}>
+              Close
+            </Button>
+          </div>
+          <p className="text-sm text-vintage-text whitespace-pre-wrap mb-4">
+            {expandedItem.content}
+          </p>
+          {expandedItem.tags && expandedItem.tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {expandedItem.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-sand text-vintage-text text-xs font-ui rounded"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </Card>
+        </div>
+      )}
+
       {/* Knowledge Items */}
       {loading && displayItems.length === 0 ? (
         <Card>
@@ -213,6 +257,7 @@ const MapRoom = () => {
               item={item}
               onDelete={handleDelete}
               onEdit={(updatedItem) => updateItem(updatedItem.id, updatedItem)}
+              onExpand={setExpandedItem}
             />
           ))}
         </div>
