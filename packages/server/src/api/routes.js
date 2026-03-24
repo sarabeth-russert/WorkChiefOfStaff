@@ -2,6 +2,8 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import multer from 'multer';
+import { tmpdir } from 'os';
 import logger from '../config/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2380,6 +2382,131 @@ router.delete('/agenda/:id', (req, res) => {
     logger.error('Error removing agenda item', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// ========================================================================
+// Apple Health Integration
+// ========================================================================
+
+import healthDataStore from '../health/HealthDataStore.js';
+import { ingestJSON, importXML, importZip } from '../health/HealthIngestService.js';
+import { METRIC_CATEGORIES } from '../health/HealthMetrics.js';
+
+const healthUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, tmpdir()),
+    filename: (req, file, cb) => cb(null, `apple-health-${Date.now()}-${file.originalname}`),
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 * 1024 }, // 2GB for large exports
+  fileFilter: (req, file, cb) => {
+    const ok = file.mimetype === 'text/xml' || file.mimetype === 'application/xml' ||
+      file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed' ||
+      file.originalname.endsWith('.xml') || file.originalname.endsWith('.zip');
+    cb(ok ? null : new Error('Only XML or ZIP files accepted'), ok);
+  },
+});
+
+// JSON webhook for Health Auto Export iOS app
+router.post('/health/ingest', async (req, res) => {
+  try {
+    const result = await ingestJSON(req.body);
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Error ingesting health data', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// File upload for Apple Health export.zip or export.xml
+router.post('/health/import', healthUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    const io = req.app?.get?.('io') || null;
+    const filePath = req.file.path;
+    let result;
+
+    if (req.file.originalname.endsWith('.zip') || req.file.mimetype === 'application/zip') {
+      result = await importZip(filePath, io);
+    } else {
+      result = await importXML(filePath, io);
+    }
+
+    res.json({ success: true, ...result });
+  } catch (error) {
+    logger.error('Error importing health data', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get daily health metrics
+router.get('/health/daily/:date?', (req, res) => {
+  try {
+    const date = req.params.date || new Date().toISOString().split('T')[0];
+    const data = healthDataStore.getDailyMetrics(date);
+    res.json({ success: true, data, date });
+  } catch (error) {
+    logger.error('Error fetching daily health data', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get daily aggregates (sum/avg/min/max per metric)
+router.get('/health/aggregates/:date?', (req, res) => {
+  try {
+    const date = req.params.date || new Date().toISOString().split('T')[0];
+    const aggregates = healthDataStore.getDailyAggregates(date);
+    res.json({ success: true, aggregates, date });
+  } catch (error) {
+    logger.error('Error fetching health aggregates', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get trend data for a specific metric
+router.get('/health/trends', (req, res) => {
+  try {
+    const metric = req.query.metric;
+    const days = parseInt(req.query.days) || 7;
+    if (!metric) {
+      return res.status(400).json({ success: false, error: 'metric query parameter required' });
+    }
+    const trend = healthDataStore.getMetricTrend(metric, days);
+    res.json({ success: true, metric, days, trend });
+  } catch (error) {
+    logger.error('Error fetching health trends', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get latest values for all tracked metrics (summary dashboard)
+router.get('/health/summary', (req, res) => {
+  try {
+    const latest = healthDataStore.getLatestValues();
+    const dateRange = healthDataStore.getDateRange();
+    res.json({ success: true, latest, dateRange });
+  } catch (error) {
+    logger.error('Error fetching health summary', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get available date range
+router.get('/health/range', (req, res) => {
+  try {
+    const range = healthDataStore.getDateRange();
+    res.json({ success: true, range });
+  } catch (error) {
+    logger.error('Error fetching health range', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get metric categories config (for client rendering)
+router.get('/health/metrics/config', (req, res) => {
+  res.json({ success: true, categories: METRIC_CATEGORIES });
 });
 
 export default router;

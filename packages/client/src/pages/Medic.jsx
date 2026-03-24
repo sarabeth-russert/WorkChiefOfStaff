@@ -11,6 +11,7 @@ import OuraScoreChart from '../components/wellness/OuraScoreChart';
 import ScoreGauge from '../components/wellness/ScoreGauge';
 import HeartRateInfo from '../components/wellness/HeartRateInfo';
 import BreathingTimer from '../components/wellness/BreathingTimer';
+import { HealthDashboard } from '../components/health';
 
 const Medic = () => {
   const [wellnessData, setWellnessData] = useState(null);
@@ -352,6 +353,11 @@ const Medic = () => {
         />
       )}
 
+      {/* Apple Health Section */}
+      {!isLoading && (
+        <HealthDashboard />
+      )}
+
       {/* No Data State */}
       {!isLoading && !wellnessData && !error && (
         <Card>
@@ -383,14 +389,15 @@ const Medic = () => {
         <h3 className="text-xl font-poster text-vintage-text mb-4">About the Medic Station</h3>
         <div className="space-y-3 text-vintage-text">
           <p>
-            The Medic monitors your adventurer's vitals via Oura Ring and provides daily health reports.
+            The Medic monitors your adventurer's vitals via Oura Ring and Apple Health, providing daily health reports.
             Your daily planning and reflection sessions are tracked in <strong>Base Camp</strong>.
           </p>
           <ul className="list-disc list-inside space-y-2 ml-4">
-            <li>Hourly vitals sync keeps your health data current</li>
+            <li>Hourly Oura vitals sync keeps your recovery data current</li>
+            <li>Apple Health import brings in heart rate, HRV, steps, body composition, and more</li>
             <li>Morning reports assess your readiness for the day's quest</li>
-            <li>7-day trend analysis tracks sleep, activity, and recovery</li>
-            <li>Configure your Oura Ring connection in Settings</li>
+            <li>Trend analysis tracks your metrics over time</li>
+            <li>Configure Oura in Settings; import Apple Health data below</li>
           </ul>
           <p className="text-sm opacity-80 pt-2 border-t-2 border-vintage-text">
             Your health data is stored locally and never shared with third parties.
