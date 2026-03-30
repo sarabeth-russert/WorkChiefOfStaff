@@ -10,7 +10,10 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 
 const Settings = () => {
-  const [activeTab, setActiveTab] = useState('providers');
+  // Auto-switch to Oura tab when returning from OAuth callback
+  const params = new URLSearchParams(window.location.search);
+  const initialTab = params.has('code') && params.has('state') ? 'oura' : 'providers';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const { initialize, loading, error } = useConfigStore();
 
   useEffect(() => {

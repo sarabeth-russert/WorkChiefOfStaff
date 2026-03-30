@@ -314,6 +314,11 @@ const Dashboard = () => {
                   Based on yesterday's data
                 </p>
               )}
+              {wellness.source === 'standup' && (
+                <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
+                  From your morning standup
+                </p>
+              )}
 
               {/* Divider before habits */}
               <div className="h-px w-full bg-vintage-text opacity-20 my-4" />

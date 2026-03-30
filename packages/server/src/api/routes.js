@@ -1226,12 +1226,14 @@ router.post('/wellness/session/message', async (req, res) => {
 
     // If this is a standup awaiting scores, provide enhanced context
     if (session?.awaitingScores && session?.type === 'standup') {
-      // Extract scores from message (simple pattern matching)
-      const sleepMatch = message.match(/sleep[:\s]+(\d+)/i);
-      const readinessMatch = message.match(/readiness[:\s]+(\d+)/i);
+      // Extract scores from message (supports "sleep: 85", "sleep 85", "85 sleep", "85 for sleep")
+      const sleepMatch = message.match(/sleep[:\s]+(\d+)/i) || message.match(/(\d+)\s+(?:for\s+)?sleep/i);
+      const readinessMatch = message.match(/readiness[:\s]+(\d+)/i) || message.match(/(\d+)\s+(?:for\s+)?readiness/i);
+      // Also handle "85 for both" or "both are 85" patterns
+      const bothMatch = !sleepMatch && !readinessMatch && message.match(/(\d+)\s+(?:for\s+)?both/i);
 
-      const sleepScore = sleepMatch ? parseInt(sleepMatch[1]) : null;
-      const readinessScore = readinessMatch ? parseInt(readinessMatch[1]) : null;
+      const sleepScore = sleepMatch ? parseInt(sleepMatch[1]) : (bothMatch ? parseInt(bothMatch[1]) : null);
+      const readinessScore = readinessMatch ? parseInt(readinessMatch[1]) : (bothMatch ? parseInt(bothMatch[1]) : null);
 
       // Build calendar context if available from session
       let scheduleContext = '';
@@ -1261,6 +1263,16 @@ Keep your response warm, supportive, and concise.`;
 
       // Mark session as no longer awaiting scores
       await wellnessDataStore.updateSession(date, sessionId, { awaitingScores: false });
+
+      // Persist standup-provided scores as fallback for dashboard display
+      if (sleepScore || readinessScore) {
+        const standupScores = {};
+        if (sleepScore) standupScores.standupSleep = sleepScore;
+        if (readinessScore) standupScores.standupReadiness = readinessScore;
+        standupScores.standupScoresAt = new Date().toISOString();
+        await wellnessDataStore.updateMetrics(date, standupScores);
+        logger.info('Saved standup-provided wellness scores', { date, sleepScore, readinessScore });
+      }
     }
 
     // Call Guide agent via orchestrator
@@ -2063,6 +2075,30 @@ router.get('/briefing', async (req, res) => {
       }
     } catch (err) {
       logger.error('Briefing: on-demand Oura sync failed', { error: err.message });
+    }
+  }
+
+  // Final fallback: use standup-provided scores if Oura data is still missing
+  if (
+    (!briefing.wellness || (!briefing.wellness.readiness && !briefing.wellness.sleep))
+  ) {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const todayData = await wellnessDataStore.getDailyMetrics(today);
+      const m = todayData?.metrics;
+      if (m?.standupReadiness || m?.standupSleep) {
+        briefing.wellness = {
+          date: 'today',
+          readiness: m.standupReadiness ?? null,
+          sleep: m.standupSleep ?? null,
+          activity: briefing.wellness?.activity ?? null,
+          sleepDuration: briefing.wellness?.sleepDuration ?? null,
+          contributors: briefing.wellness?.contributors ?? null,
+          source: 'standup',
+        };
+      }
+    } catch (err) {
+      logger.error('Briefing: standup score fallback failed', { error: err.message });
     }
   }
 

@@ -7,7 +7,7 @@ const OuraSetup = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
-  const [redirectUri, setRedirectUri] = useState(window.location.origin + '/medic');
+  const [redirectUri, setRedirectUri] = useState(window.location.origin + '/settings');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [authState, setAuthState] = useState(null);
@@ -126,7 +126,7 @@ const OuraSetup = ({ onComplete }) => {
             To connect your Oura Ring data, you'll need to create an OAuth application.
           </p>
           <ol className="list-decimal list-inside space-y-2 text-vintage-text ml-4">
-            <li>Visit <a href="https://cloud.ouraring.com/oauth/applications" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-terracotta-dark underline">cloud.ouraring.com/oauth/applications</a></li>
+            <li>Visit <a href="https://developer.ouraring.com/" target="_blank" rel="noopener noreferrer" className="text-terracotta hover:text-terracotta-dark underline">https://developer.ouraring.com/</a></li>
             <li>Click "Create New OAuth Application"</li>
             <li>Fill in the required fields:
               <ul className="list-disc list-inside ml-6 mt-2 space-y-1">
@@ -193,7 +193,7 @@ const OuraSetup = ({ onComplete }) => {
                 type="text"
                 value={redirectUri}
                 onChange={(e) => setRedirectUri(e.target.value)}
-                placeholder="http://localhost:5173/medic"
+                placeholder="http://localhost:5173/settings"
                 className="w-full"
               />
               <p className="text-xs text-vintage-text opacity-70 mt-1">
