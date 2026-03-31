@@ -71,7 +71,7 @@ Monorepo structure with client-server architecture:
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    Browser Client                    │
-│   React 18 + Vite + Tailwind CSS (Port 5555)       │
+│   React 18 + Vite + Tailwind CSS (Port 5173)       │
 │   ├─ Zustand State Management                       │
 │   ├─ React Router Navigation                        │
 │   └─ Socket.IO Real-time Updates                    │
@@ -143,11 +143,11 @@ See `AWS_BEDROCK_SETUP.md` for detailed AWS configuration options.
 npm run dev
 ```
 
-This starts both client (port 5555) and server (port 5554) using PM2.
+This starts both client (port 5173) and server (port 5554) using PM2.
 
 5. **Open your browser:**
 ```
-http://localhost:5555
+http://localhost:5173
 ```
 
 6. **Configure integrations (optional):**
@@ -233,12 +233,29 @@ Each agent is a specialized AI assistant with unique personality, skills, and vi
 **Skills**: Code analysis, pattern recognition, refactoring, dependency mapping
 **Usage**: Codebase exploration, technical documentation, architecture reviews
 
-### Coming Soon
+#### 💰 Trader
+**Personality**: Pragmatic, cost-conscious, resourceful
+**Role**: Dependency and resource management
+**Skills**: npm operations, bundle optimization, performance tuning, cost-benefit analysis
+**Usage**: Dependency updates, package management, performance optimization
 
-- 💰 **Trader** - Dependency and resource management
-- 🧭 **Navigator** - Git operations and version control
-- 🏺 **Archaeologist** - Knowledge retrieval and research
-- 🔭 **Scout** - Testing, monitoring, and quality assurance
+#### 🧭 Navigator
+**Personality**: Strategic, methodical, forward-thinking
+**Role**: Git workflows and deployment
+**Skills**: Branch strategies, CI/CD, release management, version control
+**Usage**: Git operations, deployment planning, release coordination
+
+#### 🏺 Archaeologist
+**Personality**: Thorough, investigative, detail-oriented
+**Role**: Code archaeology and research
+**Skills**: Documentation search, technical debt analysis, historical context
+**Usage**: Legacy code analysis, research, documentation discovery
+
+#### 🔭 Scout
+**Personality**: Vigilant, quality-focused, proactive
+**Role**: Testing, monitoring, and quality assurance
+**Skills**: Bug detection, test analysis, performance monitoring, quality metrics
+**Usage**: Test runs, monitoring, QA reviews, performance analysis
 
 ---
 
@@ -247,7 +264,7 @@ Each agent is a specialized AI assistant with unique personality, skills, and vi
 ```
 chiefOfStaff/
 ├── packages/
-│   ├── client/                    # React frontend (Port 5555)
+│   ├── client/                    # React frontend (Port 5173)
 │   │   ├── src/
 │   │   │   ├── components/
 │   │   │   │   ├── agents/        # Agent chat interfaces
@@ -406,6 +423,10 @@ chiefOfStaff/
 - [x] Streaming conversation interface
 - [x] Guide agent (wellness coaching)
 - [x] Explorer agent (code analysis)
+- [x] Trader agent (dependency management)
+- [x] Navigator agent (git workflows)
+- [x] Archaeologist agent (code archaeology)
+- [x] Scout agent (testing & QA)
 - [x] Multi-turn conversation support
 - [x] Character illustrations
 
@@ -441,7 +462,6 @@ chiefOfStaff/
 - [ ] Knowledge base semantic search
 - [ ] Terminal functionality in Outpost
 - [ ] Git operations in Outpost
-- [ ] Additional agent characters (Trader, Navigator, Archaeologist, Scout)
 
 ### 🔮 Future Enhancements
 - [ ] Multi-agent task coordination

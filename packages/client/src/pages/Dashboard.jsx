@@ -192,6 +192,7 @@ const Dashboard = () => {
   const jira = briefing?.jira;
   const lastRetro = briefing?.lastRetro;
   const todayPlan = briefing?.todayPlan;
+  const insights = briefing?.insights || [];
 
   const handleToggleHabit = async (habitId) => {
     setHabitCompleted(prev => ({ ...prev, [habitId]: !prev[habitId] }));
@@ -242,6 +243,32 @@ const Dashboard = () => {
           {briefing?.weather || 'Your daily expedition briefing is ready.'}
         </p>
       </div>
+
+      {/* Cross-Feature Insights */}
+      {insights.length > 0 && (
+        <div className="space-y-2">
+          {insights.map((insight, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-3 px-5 py-3 rounded-lg border-2 border-mustard bg-mustard bg-opacity-5"
+            >
+              <span className="text-lg flex-shrink-0 mt-0.5">
+                {insight.type === 'energy-protect' ? '\uD83D\uDEE1\uFE0F'
+                  : insight.type === 'meeting-load' || insight.type === 'back-to-back' ? '\uD83D\uDCC5'
+                  : insight.type === 'stale-ticket' || insight.type === 'wip-limit' ? '\uD83C\uDFAB'
+                  : insight.type === 'standup-reminder' ? '\uD83E\uDDED'
+                  : insight.type === 'habit-nudge' || insight.type === 'habits-complete' ? '\u2B50'
+                  : insight.type === 'good-day' ? '\u26A1'
+                  : insight.type === 'clear-schedule' ? '\uD83C\uDFAF'
+                  : '\uD83D\uDCA1'}
+              </span>
+              <p className="font-serif text-sm text-vintage-text leading-relaxed">
+                {insight.text}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Main Briefing Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

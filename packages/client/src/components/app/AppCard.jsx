@@ -5,6 +5,7 @@ const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs, onDelete }) => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'online':
+      case 'running':
         return 'bg-jungle text-cream';
       case 'stopped':
         return 'bg-terracotta-dark text-cream';
@@ -18,6 +19,7 @@ const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs, onDelete }) => {
   const getStatusText = (status) => {
     switch (status) {
       case 'online':
+      case 'running':
         return 'Running';
       case 'stopped':
         return 'Stopped';
@@ -28,7 +30,7 @@ const AppCard = ({ app, onStart, onStop, onRestart, onViewLogs, onDelete }) => {
     }
   };
 
-  const isRunning = app.status === 'online';
+  const isRunning = app.status === 'online' || app.status === 'running';
 
   return (
     <Card variant="canvas" className="border-mustard">

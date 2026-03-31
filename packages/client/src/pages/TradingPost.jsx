@@ -3,6 +3,7 @@ import { Card, Button, CheckIcon } from '../components/ui';
 import useAppStore from '../stores/appStore';
 import AppCard from '../components/app/AppCard';
 import AddAppModal from '../components/app/AddAppModal';
+import LogViewerModal from '../components/app/LogViewerModal';
 
 const TradingPost = () => {
   const {
@@ -23,6 +24,7 @@ const TradingPost = () => {
 
   const [selectedApp, setSelectedApp] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showLogViewer, setShowLogViewer] = useState(false);
 
   useEffect(() => {
     fetchApps();
@@ -63,8 +65,7 @@ const TradingPost = () => {
 
   const handleViewLogs = (app) => {
     setSelectedApp(app);
-    // TODO: Implement log viewer modal
-    alert(`Log viewer for ${app.name} coming soon!`);
+    setShowLogViewer(true);
   };
 
   const handleAddApp = async (appData) => {
@@ -229,6 +230,17 @@ const TradingPost = () => {
         <AddAppModal
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddApp}
+        />
+      )}
+
+      {/* Log Viewer Modal */}
+      {showLogViewer && selectedApp && (
+        <LogViewerModal
+          app={selectedApp}
+          onClose={() => {
+            setShowLogViewer(false);
+            setSelectedApp(null);
+          }}
         />
       )}
     </div>

@@ -12,6 +12,7 @@ import agentFactory from '../agents/AgentFactory.js';
 import notificationScheduler from '../wellness/NotificationScheduler.js';
 import habitStore from '../habits/HabitStore.js';
 import agendaStore from '../habits/AgendaStore.js';
+import briefingInsights from '../briefing/BriefingInsights.js';
 
 const router = express.Router();
 
@@ -2171,6 +2172,7 @@ router.get('/briefing', async (req, res) => {
     }
 
     briefing.jira = { inProgress, inReview, todo };
+    briefing.jiraRaw = issues;
   }
 
   // Last retro notes (carry forward)
@@ -2230,6 +2232,17 @@ router.get('/briefing', async (req, res) => {
   } catch (err) {
     logger.debug('Error loading agenda for briefing', { error: err.message });
   }
+
+  // Generate cross-feature insights
+  try {
+    briefing.insights = briefingInsights.generate(briefing);
+  } catch (err) {
+    logger.debug('Briefing insights generation failed', { error: err.message });
+    briefing.insights = [];
+  }
+
+  // Strip raw Jira data before sending to client
+  delete briefing.jiraRaw;
 
   res.json({ success: true, briefing });
 });

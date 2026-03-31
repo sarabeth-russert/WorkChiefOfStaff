@@ -141,6 +141,60 @@ const WellnessSessionPanel = () => {
           ref={messagesContainerRef}
           className="flex-1 overflow-y-auto p-4 space-y-2 bg-sand-light"
         >
+          {/* Display Jira tickets for standup sessions */}
+          {isStandup && activeSession.jiraTickets && (
+            (() => {
+              const { inProgress, inReview, todo } = activeSession.jiraTickets;
+              const hasTickets = inProgress?.length > 0 || inReview?.length > 0 || todo?.length > 0;
+              if (!hasTickets) return null;
+              return (
+                <div className="mb-4 p-4 bg-teal bg-opacity-10 border-2 border-teal rounded-lg">
+                  <h3 className="font-poster text-sm text-teal uppercase mb-3">
+                    {'\uD83C\uDFAB'} Active Tickets
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    {inProgress?.length > 0 && (
+                      <div>
+                        <span className="font-ui text-xs uppercase text-jungle opacity-70">In Progress ({inProgress.length})</span>
+                        {inProgress.map(t => (
+                          <div key={t.key} className="flex items-baseline gap-2 mt-1">
+                            <span className="font-mono text-xs text-jungle font-bold flex-shrink-0">{t.key}</span>
+                            <span className="font-serif text-vintage-text truncate">{t.summary}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {inReview?.length > 0 && (
+                      <div>
+                        <span className="font-ui text-xs uppercase text-teal opacity-70">In Review ({inReview.length})</span>
+                        {inReview.map(t => (
+                          <div key={t.key} className="flex items-baseline gap-2 mt-1">
+                            <span className="font-mono text-xs text-teal font-bold flex-shrink-0">{t.key}</span>
+                            <span className="font-serif text-vintage-text truncate">{t.summary}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {todo?.length > 0 && (
+                      <div>
+                        <span className="font-ui text-xs uppercase text-mustard-dark opacity-70">Up Next ({todo.length})</span>
+                        {todo.slice(0, 5).map(t => (
+                          <div key={t.key} className="flex items-baseline gap-2 mt-1">
+                            <span className="font-mono text-xs text-mustard-dark font-bold flex-shrink-0">{t.key}</span>
+                            <span className="font-serif text-vintage-text truncate">{t.summary}</span>
+                          </div>
+                        ))}
+                        {todo.length > 5 && (
+                          <span className="text-xs text-vintage-text opacity-50 font-ui">+{todo.length - 5} more</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()
+          )}
+
           {/* Display morning plan for retro sessions */}
           {isRetro && activeSession.morningPlan && (
             <div className="mb-4 p-4 bg-sunset bg-opacity-10 border-2 border-sunset rounded-lg">

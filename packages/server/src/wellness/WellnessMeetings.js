@@ -358,8 +358,45 @@ ${alertLines.join('\n')}
 
 Once you share these, I can provide personalized guidance for your day!`;
 
-      // Capture Jira metrics at standup time
-      const jiraMetrics = await this.getJiraInProgressMetrics();
+      // Capture Jira metrics and active tickets at standup time
+      const [jiraMetrics, jiraTickets] = await Promise.all([
+        this.getJiraInProgressMetrics(),
+        this.getJiraActiveTickets()
+      ]);
+
+      // Add Jira tickets to the prompt
+      if (jiraTickets) {
+        const ticketLines = [];
+        if (jiraTickets.inProgress.length > 0) {
+          ticketLines.push('**In Progress:**');
+          for (const t of jiraTickets.inProgress) {
+            ticketLines.push(`- ${t.key}: ${t.summary} _(${t.priority || 'No priority'})_`);
+          }
+        }
+        if (jiraTickets.inReview.length > 0) {
+          ticketLines.push('**In Review:**');
+          for (const t of jiraTickets.inReview) {
+            ticketLines.push(`- ${t.key}: ${t.summary}`);
+          }
+        }
+        if (jiraTickets.todo.length > 0) {
+          ticketLines.push('**Up Next:**');
+          for (const t of jiraTickets.todo.slice(0, 5)) {
+            ticketLines.push(`- ${t.key}: ${t.summary} _(${t.priority || 'No priority'})_`);
+          }
+          if (jiraTickets.todo.length > 5) {
+            ticketLines.push(`- ...and ${jiraTickets.todo.length - 5} more in the backlog`);
+          }
+        }
+
+        if (ticketLines.length > 0) {
+          initialPrompt += `
+**Your Active Tickets:**
+${ticketLines.join('\n')}
+
+`;
+        }
+      }
 
       // Create session with prompt (without calling Guide agent yet)
       const sessionData = {
@@ -376,6 +413,7 @@ Once you share these, I can provide personalized guidance for your day!`;
         startedAt: new Date().toISOString(),
         awaitingScores: true, // Flag to indicate we need user's scores first
         jiraMetrics: jiraMetrics || null,
+        jiraTickets: jiraTickets || null,
         calendarEvents: calendarEvents.length > 0 ? calendarEvents : null
       };
 
@@ -441,6 +479,59 @@ Once you share these, I can provide personalized guidance for your day!`;
       };
     } catch (error) {
       logger.warn('[WellnessMeetings] Could not fetch in-progress Jira metrics', {
+        error: error.message
+      });
+      return null;
+    }
+  }
+
+  /**
+   * Fetch active Jira tickets grouped by status for standup context.
+   * Returns in-progress, in-review, and top todo items with summaries.
+   */
+  async getJiraActiveTickets() {
+    let jiraManager;
+    try {
+      const jiraModule = await import('../integrations/JiraManager.js');
+      jiraManager = jiraModule.default;
+
+      if (!jiraManager.configured) {
+        return null;
+      }
+
+      const result = await jiraManager.getIssues('CONTECH', {
+        myIssuesOnly: true,
+        maxResults: 50
+      });
+
+      const issues = result.issues || [];
+      const inProgress = [];
+      const inReview = [];
+      const todo = [];
+
+      for (const issue of issues) {
+        const status = issue.fields?.status?.name?.toLowerCase() || '';
+        const item = {
+          key: issue.key,
+          summary: issue.fields?.summary,
+          status: issue.fields?.status?.name,
+          priority: issue.fields?.priority?.name,
+          type: issue.fields?.issuetype?.name,
+          updated: issue.fields?.updated,
+        };
+
+        if (status.includes('progress') || status.includes('development')) {
+          inProgress.push(item);
+        } else if (status.includes('review')) {
+          inReview.push(item);
+        } else if (!status.includes('done') && !status.includes('closed')) {
+          todo.push(item);
+        }
+      }
+
+      return { inProgress, inReview, todo };
+    } catch (error) {
+      logger.warn('[WellnessMeetings] Could not fetch active Jira tickets', {
         error: error.message
       });
       return null;
