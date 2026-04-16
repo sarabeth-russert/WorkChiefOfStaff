@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import Navigation from './Navigation';
 import NotificationBanner from '../wellness/NotificationBanner';
 import { WellnessSessionPanel } from '../wellness';
+import { ToastContainer } from '../ui';
 import useWellnessStore from '../../stores/wellnessStore';
 
 const Layout = () => {
@@ -25,10 +26,11 @@ const Layout = () => {
         notification={notification}
         onDismiss={handleDismiss}
       />
-      <main className={`container mx-auto px-6 py-8 ${notification ? 'mt-24' : ''}`}>
+      <main className={`container mx-auto px-3 sm:px-6 py-4 sm:py-8 ${notification ? 'mt-24' : ''}`}>
         <Outlet />
       </main>
       <WellnessSessionPanel />
+      <ToastContainer />
     </div>
   );
 };

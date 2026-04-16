@@ -30,6 +30,23 @@ export function formatMarkdown(text) {
   html = html.replace(/^- (.*$)/gim, '<li class="ml-4">$1</li>');
   html = html.replace(/(<li.*<\/li>)/s, '<ul class="my-2">$1</ul>');
 
+  // Tables
+  html = html.replace(/(?:^|\n)((?:\|.*\|[ \t]*\n)+)/g, (match, tableBlock) => {
+    const rows = tableBlock.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return match;
+    // Check if second row is a separator (e.g. |---|---|)
+    const isSeparator = /^\|[\s\-:]+(\|[\s\-:]+)+\|?$/.test(rows[1].trim());
+    if (!isSeparator) return match;
+    const parseRow = (row) => row.split('|').slice(1, -1).map(c => c.trim());
+    const headers = parseRow(rows[0]);
+    const headerHtml = '<tr>' + headers.map(h => `<th class="px-3 py-2 text-left font-poster border-b-2 border-vintage-text">${h}</th>`).join('') + '</tr>';
+    const bodyRows = rows.slice(2).map(row => {
+      const cells = parseRow(row);
+      return '<tr class="border-b border-sand">' + cells.map(c => `<td class="px-3 py-2">${c}</td>`).join('') + '</tr>';
+    }).join('');
+    return `<table class="w-full my-4 text-sm"><thead>${headerHtml}</thead><tbody>${bodyRows}</tbody></table>`;
+  });
+
   // Line breaks
   html = html.replace(/\n\n/g, '</p><p class="mb-4">');
   html = '<p class="mb-4">' + html + '</p>';

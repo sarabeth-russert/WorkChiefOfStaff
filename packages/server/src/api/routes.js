@@ -2558,4 +2558,161 @@ router.get('/health/metrics/config', (req, res) => {
   res.json({ success: true, categories: METRIC_CATEGORIES });
 });
 
+// ========================================================================
+// Goals & Weekly Reviews
+// ========================================================================
+
+import goalStore from '../goals/GoalStore.js';
+
+// Get all goals (optionally filter by week or status)
+router.get('/goals', (req, res) => {
+  try {
+    const { weekOf, status } = req.query;
+    let goals = goalStore.getAll();
+    if (weekOf) goals = goals.filter(g => g.weekOf === weekOf);
+    if (status) goals = goals.filter(g => g.status === status);
+    res.json({ success: true, goals });
+  } catch (error) {
+    logger.error('Error fetching goals', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get current week identifier
+router.get('/goals/current-week', (req, res) => {
+  res.json({ success: true, weekOf: goalStore.constructor.getCurrentWeek() });
+});
+
+// Get weekly review for a specific week
+router.get('/goals/review/:weekOf', (req, res) => {
+  try {
+    const review = goalStore.getWeeklyReview(req.params.weekOf);
+    res.json({ success: true, review });
+  } catch (error) {
+    logger.error('Error fetching weekly review', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Create a goal
+router.post('/goals', (req, res) => {
+  try {
+    const { title, description, weekOf, category, milestones } = req.body;
+    if (!title || !weekOf) {
+      return res.status(400).json({ success: false, error: 'title and weekOf are required' });
+    }
+    const goal = goalStore.create({ title, description, weekOf, category, milestones });
+    res.json({ success: true, goal });
+  } catch (error) {
+    logger.error('Error creating goal', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update a goal
+router.put('/goals/:id', (req, res) => {
+  try {
+    const goal = goalStore.update(req.params.id, req.body);
+    if (!goal) return res.status(404).json({ success: false, error: 'Goal not found' });
+    res.json({ success: true, goal });
+  } catch (error) {
+    logger.error('Error updating goal', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Toggle a milestone
+router.post('/goals/:id/milestones/:milestoneId/toggle', (req, res) => {
+  try {
+    const goal = goalStore.toggleMilestone(req.params.id, req.params.milestoneId);
+    if (!goal) return res.status(404).json({ success: false, error: 'Goal or milestone not found' });
+    res.json({ success: true, goal });
+  } catch (error) {
+    logger.error('Error toggling milestone', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add a milestone to a goal
+router.post('/goals/:id/milestones', (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) return res.status(400).json({ success: false, error: 'text is required' });
+    const goal = goalStore.addMilestone(req.params.id, text);
+    if (!goal) return res.status(404).json({ success: false, error: 'Goal not found' });
+    res.json({ success: true, goal });
+  } catch (error) {
+    logger.error('Error adding milestone', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Delete a goal
+router.delete('/goals/:id', (req, res) => {
+  try {
+    const deleted = goalStore.delete(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Goal not found' });
+    res.json({ success: true });
+  } catch (error) {
+    logger.error('Error deleting goal', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ========================================================================
+// Focus Sessions
+// ========================================================================
+
+import focusStore from '../focus/FocusStore.js';
+
+// Get focus sessions (optionally filter by date)
+router.get('/focus/sessions', (req, res) => {
+  try {
+    const { date } = req.query;
+    const sessions = date ? focusStore.getByDate(date) : focusStore.getAll();
+    res.json({ success: true, sessions });
+  } catch (error) {
+    logger.error('Error fetching focus sessions', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get focus stats for a date range
+router.get('/focus/stats', (req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const stats = focusStore.getStats(startDate, endDate);
+    res.json({ success: true, stats });
+  } catch (error) {
+    logger.error('Error fetching focus stats', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Start a focus session
+router.post('/focus/sessions', (req, res) => {
+  try {
+    const { duration, label, goalId } = req.body;
+    if (!duration) return res.status(400).json({ success: false, error: 'duration is required' });
+    const session = focusStore.start({ duration, label, goalId });
+    res.json({ success: true, session });
+  } catch (error) {
+    logger.error('Error starting focus session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Complete a focus session
+router.post('/focus/sessions/:id/complete', (req, res) => {
+  try {
+    const { completed = true } = req.body;
+    const session = focusStore.complete(req.params.id, completed);
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+    res.json({ success: true, session });
+  } catch (error) {
+    logger.error('Error completing focus session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 export default router;

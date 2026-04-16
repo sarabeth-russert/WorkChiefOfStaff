@@ -129,7 +129,7 @@ const Medic = () => {
       const response = await fetch(`${apiUrl}/api/wellness/settings`);
       if (response.ok) {
         const data = await response.json();
-        setSettings(data);
+        setSettings(data.settings || data);
       }
     } catch (err) {
       // Settings fetch is non-critical; silently fail
@@ -158,7 +158,7 @@ const Medic = () => {
       }
 
       const data = await response.json();
-      setSettings(data);
+      setSettings(data.settings || data);
     } catch (err) {
       // Re-thrown below for caller to handle
       throw err;

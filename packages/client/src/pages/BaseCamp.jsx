@@ -2,14 +2,19 @@ import { useEffect, useState } from 'react';
 import { Card, Loading } from '../components/ui';
 import Button from '../components/ui/Button';
 import { SessionJournalEntry, WeeklyInsightsCard } from '../components/wellness';
+import GoalTracker from '../components/goals/GoalTracker';
+import FocusTimer from '../components/focus/FocusTimer';
+import useToastStore from '../stores/toastStore';
 
 const BaseCamp = () => {
   const [sessionHistory, setSessionHistory] = useState([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [selectedDateRange, setSelectedDateRange] = useState('recent'); // 'recent' or specific date range key
   const [showArchive, setShowArchive] = useState(false);
+  const [showFocusTimer, setShowFocusTimer] = useState(false);
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
+  const toast = useToastStore;
 
   useEffect(() => {
     fetchSessionHistory();
@@ -89,16 +94,15 @@ const BaseCamp = () => {
       const result = await response.json();
 
       if (result.success && !result.alreadyDelivered) {
-        alert('Morning standup triggered! Check your notifications.');
-        // Refresh the session history after a short delay to see the new session
+        toast.getState().success('Morning standup triggered! Check your notifications.');
         setTimeout(() => fetchSessionHistory(), 2000);
       } else if (result.alreadyDelivered) {
-        alert('Morning standup already delivered today.');
+        toast.getState().info('Morning standup already delivered today.');
       } else {
-        alert('Failed to trigger standup: ' + (result.error || 'Unknown error'));
+        toast.getState().error('Failed to trigger standup: ' + (result.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Error triggering standup: ' + err.message);
+      toast.getState().error('Error triggering standup: ' + err.message);
     }
   };
 
@@ -110,16 +114,15 @@ const BaseCamp = () => {
       const result = await response.json();
 
       if (result.success && !result.alreadyDelivered) {
-        alert('Evening retro triggered! Check your notifications.');
-        // Refresh the session history after a short delay to see the new session
+        toast.getState().success('Evening retro triggered! Check your notifications.');
         setTimeout(() => fetchSessionHistory(), 2000);
       } else if (result.alreadyDelivered) {
-        alert('Evening retro already delivered today.');
+        toast.getState().info('Evening retro already delivered today.');
       } else {
-        alert('Failed to trigger retro: ' + (result.error || 'Unknown error'));
+        toast.getState().error('Failed to trigger retro: ' + (result.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Error triggering retro: ' + err.message);
+      toast.getState().error('Error triggering retro: ' + err.message);
     }
   };
 
@@ -149,7 +152,7 @@ const BaseCamp = () => {
       </div>
 
       {/* Manual Session Triggers */}
-      <div className="max-w-4xl mx-auto mb-8">
+      <div className="max-w-6xl mx-auto mb-8">
         <Card variant="canvas">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div>
@@ -158,7 +161,7 @@ const BaseCamp = () => {
                 Manually trigger your daily planning and reflection sessions
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
               <Button
                 variant="primary"
                 size="md"
@@ -173,15 +176,32 @@ const BaseCamp = () => {
               >
                 🌙 Evening Retro
               </Button>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={() => setShowFocusTimer(true)}
+              >
+                🎯 Focus Timer
+              </Button>
             </div>
           </div>
         </Card>
+      </div>
+
+      {/* Weekly Goals */}
+      <div className="max-w-6xl mx-auto mb-6">
+        <GoalTracker />
       </div>
 
       {/* Weekly Insights */}
       <div className="max-w-6xl mx-auto mb-6">
         <WeeklyInsightsCard />
       </div>
+
+      {/* Focus Timer Modal */}
+      {showFocusTimer && (
+        <FocusTimer onClose={() => setShowFocusTimer(false)} />
+      )}
 
       {/* Session Journal with Archive Sidebar */}
       <div className="max-w-6xl mx-auto">

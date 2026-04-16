@@ -114,6 +114,20 @@ class WellnessMeetings {
   }
 
   /**
+   * Build work schedule context string from settings
+   * Describes default work hours and how to interpret the calendar
+   */
+  getWorkScheduleContext(settings) {
+    const ctx = settings?.userContext?.defaultWorkSchedule;
+    if (!ctx) {
+      const start = settings?.workStartTime || '07:00';
+      const end = settings?.workEndTime || '16:00';
+      return `Default work hours: ${start} - ${end}. Unscheduled time in this window is focused work time.`;
+    }
+    return ctx.description;
+  }
+
+  /**
    * Build wellness context from Oura data
    * @param {Object} metrics - Oura metrics object
    * @returns {string} Formatted wellness context
@@ -280,10 +294,20 @@ class WellnessMeetings {
       const calendarEvents = await this.getTodayCalendarEvents();
       const scheduleText = this.formatEventsForContext(calendarEvents);
 
+      // Load settings for work schedule context
+      const settings = await this.loadSettings();
+      const workScheduleContext = this.getWorkScheduleContext(settings);
+
       // Create initial prompt asking user for their scores
       let initialPrompt = `Good morning! 🌅
 
 Since Oura Ring readiness data takes 24 hours to sync, let's start with what you're seeing in your Oura app right now.
+`;
+
+      // Add work schedule context
+      initialPrompt += `
+**Work Schedule:** ${workScheduleContext}
+
 `;
 
       // Add yesterday's notes if available
@@ -732,8 +756,13 @@ ${ticketLines.join('\n')}
         retroDeliveredAt: new Date().toISOString()
       });
 
+      // Load settings for work schedule context
+      const settings = await this.loadSettings();
+      const workScheduleContext = this.getWorkScheduleContext(settings);
+
       // Build context for retro
       let context = '# Today\'s Activity Summary\n\n';
+      context += `## Work Schedule\n${workScheduleContext}\n\n`;
 
       if (activityData && activityData.data && activityData.data.length > 0) {
         const activity = activityData.data[0];

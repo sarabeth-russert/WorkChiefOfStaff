@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, CheckIcon } from '../components/ui';
 import useAppStore from '../stores/appStore';
+import useToastStore from '../stores/toastStore';
 import AppCard from '../components/app/AppCard';
 import AddAppModal from '../components/app/AddAppModal';
 import LogViewerModal from '../components/app/LogViewerModal';
@@ -78,7 +79,11 @@ const TradingPost = () => {
   };
 
   const handleDeleteApp = async (appId) => {
-    if (confirm('Are you sure you want to unregister this app? This will not delete the app files.')) {
+    const confirmed = await useToastStore.getState().confirm(
+      'Are you sure you want to unregister this app? This will not delete the app files.',
+      { title: 'Unregister App', confirmLabel: 'Unregister', cancelLabel: 'Cancel' }
+    );
+    if (confirmed) {
       try {
         await deleteApp(appId);
       } catch (error) {

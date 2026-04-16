@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useWellnessStore from '../../stores/wellnessStore';
+import useToastStore from '../../stores/toastStore';
 import Button from '../ui/Button';
 import MessageBubble from './MessageBubble';
 import { SESSION_TYPE_CONFIG } from '../../utils/wellness';
@@ -69,7 +70,7 @@ const WellnessSessionPanel = () => {
 
     if (isStandup) {
       if (!planSummary.trim()) {
-        alert('Please provide a plan summary before completing the standup.');
+        useToastStore.getState().warning('Please provide a plan summary before completing the standup.');
         return;
       }
       summary.plan = planSummary.trim();
@@ -77,7 +78,7 @@ const WellnessSessionPanel = () => {
 
     if (isRetro) {
       if (!accomplishments.trim() && !notesForTomorrow.trim()) {
-        alert('Please provide accomplishments or notes before completing the retro.');
+        useToastStore.getState().warning('Please provide accomplishments or notes before completing the retro.');
         return;
       }
       summary.accomplishments = accomplishments
@@ -90,13 +91,16 @@ const WellnessSessionPanel = () => {
     try {
       await completeSession(summary);
     } catch (error) {
-      // Session completion failed; alert shown below
-      alert('Failed to complete session. Please try again.');
+      useToastStore.getState().error('Failed to complete session. Please try again.');
     }
   };
 
-  const handleClose = () => {
-    if (confirm('Are you sure you want to close this session? You can reopen it from the notification.')) {
+  const handleClose = async () => {
+    const confirmed = await useToastStore.getState().confirm(
+      'Are you sure you want to close this session? You can reopen it from the notification.',
+      { title: 'Close Session', confirmLabel: 'Close', cancelLabel: 'Keep Open' }
+    );
+    if (confirmed) {
       closeSessionPanel();
     }
   };
@@ -238,7 +242,7 @@ const WellnessSessionPanel = () => {
             <>
               {sessionMessages.map((message, idx) => (
                 <MessageBubble
-                  key={message.timestamp || idx}
+                  key={`${message.timestamp}-${idx}`}
                   role={message.role}
                   content={message.content}
                   timestamp={message.timestamp}

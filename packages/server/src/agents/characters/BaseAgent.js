@@ -123,6 +123,10 @@ BACKEND (packages/server/):
 
 Key integrations: Jira (task tracking), Outlook (calendar), Oura Ring (wellness/sleep), AI agents (Claude-powered).
 ${workspaceContext}
+## User Schedule Context
+
+The user's default work hours are 7:00 AM - 4:00 PM Pacific time. Unless they say otherwise, assume they are working during these hours. Scheduled events (school, appointments, etc.) may occur within this window and are intentional. Unscheduled time in this window is focused work time.
+
 ## How to Work
 
 Use your tools to take action. Read files before modifying them. Explain what you did after.

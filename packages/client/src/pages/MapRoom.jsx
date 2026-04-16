@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Card, Button, Input } from '../components/ui';
 import useKnowledgeStore from '../stores/knowledgeStore';
+import useToastStore from '../stores/toastStore';
 import KnowledgeCard from '../components/knowledge/KnowledgeCard';
 import AddKnowledgeForm from '../components/knowledge/AddKnowledgeForm';
 
@@ -57,7 +58,11 @@ const MapRoom = () => {
   };
 
   const handleDelete = async (itemId) => {
-    if (confirm('Are you sure you want to delete this item?')) {
+    const confirmed = await useToastStore.getState().confirm(
+      'Are you sure you want to delete this item?',
+      { title: 'Delete Item', confirmLabel: 'Delete', cancelLabel: 'Cancel' }
+    );
+    if (confirmed) {
       try {
         await deleteItem(itemId);
       } catch (error) {
