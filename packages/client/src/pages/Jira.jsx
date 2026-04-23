@@ -60,23 +60,28 @@ const Jira = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Banner */}
-      <div className="relative rounded-lg overflow-hidden shadow-vintage mb-8">
+      {/* Hero — let the art breathe */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage mb-2">
         <img
           src="/images/pages/jira-header.png"
-          alt="CONTECH Tickets"
-          className="w-full h-48 md:h-64 object-cover"
+          alt="Field Assignments dispatch board"
+          className="w-full h-52 md:h-72 object-cover"
           onError={(e) => e.target.style.display = 'none'}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-            Field Assignments
-          </h1>
-          <p className="text-lg text-vintage-text drop-shadow-md">
-            Track your missions and ongoing expeditions
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream/40" />
+        <div className="absolute top-4 left-4">
+          <span className="inline-block bg-vintage-text/60 text-cream px-3 py-1 rounded font-ui text-xs uppercase tracking-widest">
+            Mission Tracking
+          </span>
         </div>
+      </div>
+      <div className="text-center mb-8">
+        <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress mb-1">
+          Field Assignments
+        </h1>
+        <p className="font-serif text-vintage-text/50 text-base italic">
+          Track your missions and ongoing expeditions
+        </p>
       </div>
 
       {/* Error Display */}

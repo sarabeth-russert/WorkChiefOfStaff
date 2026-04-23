@@ -51,6 +51,39 @@ const BreathingTimer = ({ onClose }) => {
     setRemaining(0);
   };
 
+  // Play bird chirp sound when timer finishes
+  useEffect(() => {
+    if (!finished) return;
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const playChirp = (time, freq) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, time);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.8, time + 0.07);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.3, time + 0.12);
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.25, time + 0.02);
+        gain.gain.linearRampToValueAtTime(0.15, time + 0.07);
+        gain.gain.linearRampToValueAtTime(0, time + 0.12);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(time);
+        osc.stop(time + 0.12);
+      };
+      const t = ctx.currentTime;
+      playChirp(t, 2200);
+      playChirp(t + 0.18, 2600);
+      playChirp(t + 0.36, 2400);
+      playChirp(t + 0.7, 2200);
+      playChirp(t + 0.85, 2800);
+      playChirp(t + 1.0, 2500);
+      setTimeout(() => ctx.close(), 2000);
+    } catch {
+      // Audio not available
+    }
+  }, [finished]);
+
   const minutes = Math.floor(remaining / 60);
   const seconds = remaining % 60;
   const progress = duration ? 1 - remaining / duration : 0;

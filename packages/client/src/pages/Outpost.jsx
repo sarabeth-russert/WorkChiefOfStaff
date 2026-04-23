@@ -25,22 +25,28 @@ const Outpost = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header with Image */}
-      <div className="relative rounded-lg overflow-hidden shadow-vintage">
+      {/* Hero — let the art breathe */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage mb-2">
         <img
           src="/images/pages/outpost-header.png"
-          alt="Outpost"
-          className="w-full h-48 md:h-64 object-cover"
+          alt="Outpost communications tower"
+          className="w-full h-52 md:h-72 object-cover"
+          onError={(e) => e.target.style.display = 'none'}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-            Outpost
-          </h1>
-          <p className="text-lg text-vintage-text opacity-90 drop-shadow">
-            Developer Tools - Terminal & Git Operations
-          </p>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream/40" />
+        <div className="absolute top-4 left-4">
+          <span className="inline-block bg-vintage-text/60 text-cream px-3 py-1 rounded font-ui text-xs uppercase tracking-widest">
+            Developer Tools
+          </span>
         </div>
+      </div>
+      <div className="text-center mb-8">
+        <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress mb-1">
+          Outpost
+        </h1>
+        <p className="font-serif text-vintage-text/50 text-base italic">
+          Terminal operations and field communications
+        </p>
       </div>
 
       {/* Git Status + System Stats */}

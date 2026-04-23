@@ -56,27 +56,33 @@ const Expedition = () => {
 
   return (
     <div className="space-y-8">
-      {/* Hero Header with Image */}
-      <div className="relative rounded-lg overflow-hidden shadow-vintage">
+      {/* Hero — let the art breathe */}
+      <div className="relative rounded-lg overflow-hidden shadow-vintage mb-2">
         <img
           src="/images/pages/expedition-header.png"
-          alt="Expedition"
-          className="w-full h-48 md:h-64 object-cover"
+          alt="Expedition into the unknown"
+          className="w-full h-52 md:h-72 object-cover"
+          onError={(e) => e.target.style.display = 'none'}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
-        <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-            Expedition
-          </h1>
-          <p className="text-lg text-vintage-text opacity-90 drop-shadow">
-            Chief of Staff - AI Agent Orchestration
-          </p>
-          {!connected && (
-            <p className="text-terracotta-dark mt-2 drop-shadow">
-              ⚠️ Connecting to server...
-            </p>
-          )}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream/40" />
+        <div className="absolute top-4 left-4">
+          <span className="inline-block bg-vintage-text/60 text-cream px-3 py-1 rounded font-ui text-xs uppercase tracking-widest">
+            AI Agent Orchestration
+          </span>
         </div>
+      </div>
+      <div className="text-center mb-8">
+        <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress mb-1">
+          Expedition
+        </h1>
+        <p className="font-serif text-vintage-text/50 text-base italic">
+          Dispatch your crew and chart the course ahead
+        </p>
+        {!connected && (
+          <p className="text-terracotta-dark mt-2 font-serif text-sm">
+            ⚠️ Connecting to server...
+          </p>
+        )}
       </div>
 
       {/* Agent Selection */}

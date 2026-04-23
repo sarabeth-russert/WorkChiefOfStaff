@@ -331,18 +331,70 @@ const GoalTracker = () => {
 
       {/* Goal Cards */}
       {goals.length === 0 && !showAddForm ? (
-        <Card>
-          <div className="text-center py-8">
-            <div className="text-5xl mb-3">🎯</div>
-            <h3 className="text-2xl font-poster text-vintage-text mb-2">No Goals This Week</h3>
-            <p className="text-vintage-text opacity-70 font-serif mb-4">
-              Set some weekly goals to track your progress and stay focused.
+        <div className="space-y-4">
+          <div className="text-center py-6">
+            <h3 className="text-2xl font-poster text-vintage-text mb-1">No Active Objectives Posted</h3>
+            <p className="font-serif text-vintage-text/40 text-sm italic mb-5">
+              Pin your expedition objectives for the week to keep the team aligned.
             </p>
             <Button variant="primary" size="sm" onClick={() => setShowAddForm(true)}>
-              + Set Your First Goal
+              + Post First Objective
             </Button>
           </div>
-        </Card>
+
+          {/* Ghosted sample objectives */}
+          <div className="space-y-3 opacity-[0.35] pointer-events-none select-none" aria-hidden="true">
+            <div className="border-3 rounded-lg bg-cream p-4 border-jungle">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-poster text-lg text-vintage-text">Complete field survey of eastern ridge</h4>
+                    <span className="font-ui text-xs uppercase px-2 py-0.5 rounded bg-sand text-vintage-text">engineering</span>
+                  </div>
+                  <p className="text-sm text-vintage-text font-serif mt-1">Map terrain features and log coordinates</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-poster text-sm text-vintage-text">60%</span>
+                  <div className="w-16 h-2 bg-sand rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-teal" style={{ width: '60%' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="border-3 rounded-lg bg-cream p-4 border-mustard">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-poster text-lg text-vintage-text">Catalog provisions and update supply ledger</h4>
+                    <span className="font-ui text-xs uppercase px-2 py-0.5 rounded bg-sand text-vintage-text">general</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-poster text-sm text-vintage-text">0%</span>
+                  <div className="w-16 h-2 bg-sand rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-teal" style={{ width: '0%' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="border-3 rounded-lg bg-cream p-4 border-terracotta">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-poster text-lg text-vintage-text">Morning conditioning — 3 sessions this week</h4>
+                    <span className="font-ui text-xs uppercase px-2 py-0.5 rounded bg-sand text-vintage-text">health</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-poster text-sm text-vintage-text">33%</span>
+                  <div className="w-16 h-2 bg-sand rounded-full overflow-hidden">
+                    <div className="h-full rounded-full bg-teal" style={{ width: '33%' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="space-y-3">
           {activeGoals.map(goal => (

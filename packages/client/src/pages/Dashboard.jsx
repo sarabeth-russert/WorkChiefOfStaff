@@ -636,6 +636,19 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
+              <Link to="/field-training" className="block">
+                <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer">
+                  <DashIcon src="/images/dashboard/field-training.png" alt="Field Training" fallback="&#x1F3CB;" size="w-20 h-20" />
+                  <div>
+                    <div className="font-ui uppercase text-sm text-vintage-text font-bold">
+                      Field Training
+                    </div>
+                    <div className="text-xs text-vintage-text opacity-60 font-serif">
+                      Daily cognitive drills
+                    </div>
+                  </div>
+                </div>
+              </Link>
             </div>
           </Card>
         </div>

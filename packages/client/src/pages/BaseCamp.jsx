@@ -12,6 +12,7 @@ const BaseCamp = () => {
   const [selectedDateRange, setSelectedDateRange] = useState('recent'); // 'recent' or specific date range key
   const [showArchive, setShowArchive] = useState(false);
   const [showFocusTimer, setShowFocusTimer] = useState(false);
+  const [journalTab, setJournalTab] = useState('all'); // 'all', 'standup', 'retro'
 
   const apiUrl = import.meta.env.VITE_API_URL || '';
   const toast = useToastStore;
@@ -86,6 +87,36 @@ const BaseCamp = () => {
   const sessionGroups = groupSessionsByDateRange();
   const displayedSessions = sessionGroups[selectedDateRange]?.sessions || [];
 
+  // Camp status metadata for the hero banner
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todaySessions = sessionHistory.filter(s => s.startedAt?.startsWith(todayStr));
+  const hasStandup = todaySessions.some(s => s.type === 'standup');
+  const hasRetro = todaySessions.some(s => s.type === 'retro');
+
+  // Expedition day: count from first session, or day 1
+  const firstSession = sessionHistory.length > 0
+    ? sessionHistory[sessionHistory.length - 1]
+    : null;
+  const expeditionDay = firstSession
+    ? Math.max(1, Math.ceil((Date.now() - new Date(firstSession.startedAt).getTime()) / (1000 * 60 * 60 * 24)))
+    : 1;
+
+  const hour = new Date().getHours();
+  const timeOfDay = hour < 12 ? 'Morning fire lit' : hour < 17 ? 'Afternoon watch' : 'Evening campfire';
+
+  // Dashboard strip data
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+  const weekSessions = sessionHistory.filter(s => new Date(s.startedAt) >= weekStart).length;
+  const isWorkHours = hour >= 7 && hour < 21;
+
+  // Tab-filtered sessions
+  const tabFilteredSessions = displayedSessions.filter(s => {
+    if (journalTab === 'all') return true;
+    return s.type === journalTab;
+  });
+
   const handleTriggerStandup = async () => {
     try {
       const response = await fetch(`${apiUrl}/api/wellness/standup/trigger`, {
@@ -130,62 +161,83 @@ const BaseCamp = () => {
     <div className="min-h-screen bg-cream paper-texture py-8 px-6">
       {/* Hero Header */}
       <div className="max-w-6xl mx-auto mb-8">
-        <div className="relative rounded-lg overflow-hidden shadow-vintage">
+        <div className="relative rounded-lg overflow-hidden shadow-vintage mb-2">
           <img
             src="/images/pages/base-camp-header.png"
-            alt="Base Camp"
-            className="w-full h-48 md:h-64 object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
+            alt="Base Camp expedition headquarters"
+            className="w-full h-52 md:h-72 object-cover"
+            onError={(e) => e.target.style.display = 'none'}
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream opacity-60" />
-          <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
-            <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress drop-shadow-lg mb-2">
-              Base Camp
-            </h1>
-            <p className="text-lg text-vintage-text opacity-90 drop-shadow">
-              Your daily planning and reflection journal. Track your standup plans and retrospective notes.
-            </p>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-cream/40" />
+          {/* Badge */}
+          <div className="absolute top-4 left-4">
+            <span className="inline-block bg-vintage-text/60 text-cream px-3 py-1 rounded font-ui text-xs uppercase tracking-widest">
+              Daily Operations
+            </span>
           </div>
+          {/* Atmospheric camp status */}
+          <div className="absolute bottom-4 right-4 bg-vintage-text/50 backdrop-blur-sm rounded px-4 py-2.5 text-right">
+            <div className="font-ui text-[10px] uppercase tracking-widest text-cream/70 mb-1">
+              Expedition Day {expeditionDay}
+            </div>
+            <div className="flex items-center gap-3 font-ui text-[10px] uppercase tracking-widest text-cream/50">
+              <span>{timeOfDay}</span>
+              <span>·</span>
+              <span className={hasStandup ? 'text-mustard' : ''}>
+                {hasStandup ? '✓ Standup' : '○ Standup'}
+              </span>
+              <span className={hasRetro ? 'text-teal' : ''}>
+                {hasRetro ? '✓ Retro' : '○ Retro'}
+              </span>
+            </div>
+          </div>
+        </div>
+        <div className="text-center mb-8">
+          <h1 className="text-5xl md:text-6xl font-poster text-vintage-text text-letterpress mb-1">
+            Base Camp
+          </h1>
+          <p className="font-serif text-vintage-text/50 text-base italic">
+            Daily planning and reflection journal
+          </p>
         </div>
       </div>
 
-      {/* Manual Session Triggers */}
+      {/* Camp Dashboard Strip */}
       <div className="max-w-6xl mx-auto mb-8">
-        <Card variant="canvas">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-poster text-vintage-text mb-1">Start a Session</h2>
-              <p className="text-sm text-vintage-text opacity-70">
-                Manually trigger your daily planning and reflection sessions
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleTriggerStandup}
-              >
-                🌅 Morning Standup
-              </Button>
-              <Button
-                variant="secondary"
-                size="md"
-                onClick={handleTriggerRetro}
-              >
-                🌙 Evening Retro
-              </Button>
-              <Button
-                variant="outline"
-                size="md"
-                onClick={() => setShowFocusTimer(true)}
-              >
-                🎯 Focus Timer
-              </Button>
-            </div>
+        <div className="flex items-center justify-center gap-8 md:gap-12 py-4">
+          {/* Fire Lit — standup done */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full transition-colors ${hasStandup ? 'bg-mustard shadow-[0_0_6px_rgba(218,165,32,0.4)]' : 'bg-vintage-text/15'}`} />
+            <span className="font-ui text-[9px] uppercase tracking-widest text-vintage-text/35">Fire Lit</span>
           </div>
-        </Card>
+          {/* Supplies — sessions logged this week */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full transition-colors ${weekSessions >= 5 ? 'bg-jungle shadow-[0_0_6px_rgba(74,120,89,0.4)]' : weekSessions > 0 ? 'bg-mustard/70' : 'bg-vintage-text/15'}`} />
+            <span className="font-ui text-[9px] uppercase tracking-widest text-vintage-text/35">Supplies</span>
+          </div>
+          {/* Morale — both rituals done */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full transition-colors ${hasStandup && hasRetro ? 'bg-jungle shadow-[0_0_6px_rgba(74,120,89,0.4)]' : (hasStandup || hasRetro) ? 'bg-mustard/70' : 'bg-vintage-text/15'}`} />
+            <span className="font-ui text-[9px] uppercase tracking-widest text-vintage-text/35">Morale</span>
+          </div>
+          {/* Focus — active watch */}
+          <div className="flex flex-col items-center gap-1.5">
+            <div className={`w-2.5 h-2.5 rounded-full transition-colors ${isWorkHours ? 'bg-teal shadow-[0_0_6px_rgba(71,155,153,0.4)]' : 'bg-vintage-text/15'}`} />
+            <span className="font-ui text-[9px] uppercase tracking-widest text-vintage-text/35">Focus</span>
+          </div>
+
+          {/* Divider */}
+          <div className="h-5 w-px bg-vintage-text/10" />
+
+          {/* Focus Timer — compact action button */}
+          <button
+            onClick={() => setShowFocusTimer(true)}
+            className="flex items-center gap-1.5 text-vintage-text/35 hover:text-terracotta transition-colors"
+          >
+            <span className="text-sm">🎯</span>
+            <span className="font-ui text-[9px] uppercase tracking-widest">Focus Timer</span>
+          </button>
+        </div>
       </div>
 
       {/* Weekly Goals */}
@@ -203,23 +255,93 @@ const BaseCamp = () => {
         <FocusTimer onClose={() => setShowFocusTimer(false)} />
       )}
 
-      {/* Session Journal with Archive Sidebar */}
+      {/* Session Journal with Field Log Index */}
       <div className="max-w-6xl mx-auto">
+        {/* Journal mode tabs — expedition folder tabs */}
+        <div className="relative mb-5">
+          <div className="flex items-end gap-1.5">
+            {[
+              { key: 'all', label: 'All Entries', icon: '📓' },
+              { key: 'standup', label: 'Dawn Watch', icon: '🌅' },
+              { key: 'retro', label: 'Evening Watch', icon: '🌙' },
+            ].map(tab => {
+              const isActive = journalTab === tab.key;
+              const activeColor = tab.key === 'standup' ? 'text-mustard border-mustard/30'
+                : tab.key === 'retro' ? 'text-teal border-teal/30'
+                : 'text-vintage-text/60 border-sand-dark/25';
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setJournalTab(tab.key)}
+                  className={`flex items-center gap-2 px-5 font-ui text-xs uppercase tracking-widest transition-all rounded-t-lg ${
+                    isActive
+                      ? `py-3 bg-sand/30 border-2 border-b-0 ${activeColor} shadow-sm relative z-10`
+                      : 'py-2.5 text-vintage-text/25 hover:text-vintage-text/45 hover:bg-sand/10 border-2 border-transparent border-b-0 rounded-t-lg'
+                  }`}
+                >
+                  <span className="text-base">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+          {/* Tab rail */}
+          <div className="h-0.5 bg-sand-dark/15" />
+        </div>
+
+        {/* Inline trigger — shown when on a specific tab and ritual not yet done */}
+        {journalTab === 'standup' && !hasStandup && (
+          <button
+            onClick={handleTriggerStandup}
+            className="w-full mb-5 p-4 bg-mustard/5 border-2 border-dashed border-mustard/30 rounded-lg text-left hover:bg-mustard/10 transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-poster text-lg text-mustard">Set Today's Heading</div>
+                <p className="font-serif text-xs text-vintage-text/40 italic mt-0.5">
+                  The morning fire hasn't been lit — start your standup to plan the day
+                </p>
+              </div>
+              <span className="font-ui text-[10px] uppercase tracking-widest text-mustard/50 group-hover:text-mustard transition-colors">
+                Begin ▸
+              </span>
+            </div>
+          </button>
+        )}
+        {journalTab === 'retro' && !hasRetro && (
+          <button
+            onClick={handleTriggerRetro}
+            className="w-full mb-5 p-4 bg-teal/5 border-2 border-dashed border-teal/30 rounded-lg text-left hover:bg-teal/10 transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-poster text-lg text-teal">File Evening Report</div>
+                <p className="font-serif text-xs text-vintage-text/40 italic mt-0.5">
+                  The campfire is still burning — log what you learned before it fades
+                </p>
+              </div>
+              <span className="font-ui text-[10px] uppercase tracking-widest text-teal/50 group-hover:text-teal transition-colors">
+                Begin ▸
+              </span>
+            </div>
+          </button>
+        )}
+
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Archive Sidebar */}
-          <div className="lg:w-64 flex-shrink-0">
-            <Card variant="canvas" className="sticky top-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-poster text-vintage-text">📚 Archive</h3>
+          {/* Field Log Index — light ledger sidebar */}
+          <div className="lg:w-48 flex-shrink-0">
+            <div className="sticky top-6">
+              <div className="flex items-center justify-between mb-3 lg:mb-2">
+                <h3 className="font-ui text-[10px] uppercase tracking-widest text-vintage-text/35">Log Index</h3>
                 <button
                   onClick={() => setShowArchive(!showArchive)}
-                  className="lg:hidden text-vintage-text"
+                  className="lg:hidden font-ui text-xs text-vintage-text/40"
                 >
                   {showArchive ? '✕' : '☰'}
                 </button>
               </div>
 
-              <div className={`space-y-2 ${showArchive ? 'block' : 'hidden lg:block'}`}>
+              <div className={`space-y-0.5 ${showArchive ? 'block' : 'hidden lg:block'}`}>
                 {Object.entries(sessionGroups).map(([key, group]) => {
                   const isSelected = selectedDateRange === key;
                   const count = group.sessions.length;
@@ -231,54 +353,50 @@ const BaseCamp = () => {
                       key={key}
                       onClick={() => {
                         setSelectedDateRange(key);
-                        setShowArchive(false); // Close on mobile after selection
+                        setShowArchive(false);
                       }}
-                      className={`w-full text-left px-3 py-2 rounded transition-colors ${
+                      className={`w-full text-left px-2 py-1.5 rounded transition-colors flex items-center justify-between ${
                         isSelected
-                          ? 'bg-vintage-brown bg-opacity-20 border-l-4 border-vintage-brown'
-                          : 'hover:bg-vintage-brown hover:bg-opacity-10'
+                          ? 'bg-sand/40 border-l-2 border-vintage-text/30'
+                          : 'hover:bg-sand/20 border-l-2 border-transparent'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-ui text-vintage-text">
-                          {group.label}
-                        </span>
-                        <span className="text-xs bg-vintage-brown bg-opacity-20 px-2 py-1 rounded-full text-vintage-text">
-                          {count}
-                        </span>
-                      </div>
+                      <span className={`font-serif text-xs ${isSelected ? 'text-vintage-text/70' : 'text-vintage-text/40'}`}>
+                        {group.label}
+                      </span>
+                      <span className={`font-mono text-[10px] ${isSelected ? 'text-vintage-text/50' : 'text-vintage-text/25'}`}>
+                        {count}
+                      </span>
                     </button>
                   );
                 })}
               </div>
-            </Card>
+            </div>
           </div>
 
           {/* Main Content */}
           <div className="flex-1">
             {isLoadingHistory ? (
-              <Card>
-                <div className="text-center py-12">
-                  <div className="text-5xl mb-4">🔄</div>
-                  <p className="text-vintage-text font-ui uppercase">Loading your journal...</p>
-                </div>
-              </Card>
+              <div className="text-center py-12">
+                <div className="text-4xl mb-3 animate-pulse">📓</div>
+                <p className="font-ui text-xs uppercase tracking-widest text-vintage-text/35">Loading field journal...</p>
+              </div>
             ) : sessionHistory.length > 0 ? (
               <>
                 {/* Current Selection Header */}
                 <div className="mb-4 flex items-center justify-between">
-                  <h2 className="text-2xl font-poster text-vintage-text">
+                  <h3 className="text-xl font-poster text-vintage-text">
                     {sessionGroups[selectedDateRange]?.label || 'Recent Entries'}
-                  </h2>
-                  <span className="text-sm text-vintage-text opacity-70">
-                    {displayedSessions.length} {displayedSessions.length === 1 ? 'entry' : 'entries'}
+                  </h3>
+                  <span className="font-ui text-[10px] uppercase tracking-widest text-vintage-text/35">
+                    {tabFilteredSessions.length} {tabFilteredSessions.length === 1 ? 'entry' : 'entries'}
                   </span>
                 </div>
 
                 {/* Session List */}
-                {displayedSessions.length > 0 ? (
+                {tabFilteredSessions.length > 0 ? (
                   <div className="space-y-4">
-                    {displayedSessions.map((session) => (
+                    {tabFilteredSessions.map((session) => (
                       <SessionJournalEntry
                         key={session.id}
                         session={session}
@@ -286,31 +404,25 @@ const BaseCamp = () => {
                     ))}
                   </div>
                 ) : (
-                  <Card>
-                    <div className="text-center py-12">
-                      <div className="text-6xl mb-4">📭</div>
-                      <h3 className="text-2xl font-poster text-vintage-text mb-2">
-                        No Entries in This Period
-                      </h3>
-                      <p className="text-vintage-text max-w-md mx-auto">
-                        Select a different time period from the archive to view older entries.
-                      </p>
-                    </div>
-                  </Card>
+                  <div className="text-center py-12">
+                    <div className="text-4xl mb-3">📭</div>
+                    <h3 className="text-xl font-poster text-vintage-text mb-1">
+                      {journalTab === 'all' ? 'No Entries in This Period' : `No ${journalTab === 'standup' ? 'Dawn Watch' : 'Evening Watch'} Entries`}
+                    </h3>
+                    <p className="font-serif text-sm text-vintage-text/40 italic">
+                      {journalTab === 'all' ? 'Select a different period from the log index.' : 'Try a different date range or switch tabs.'}
+                    </p>
+                  </div>
                 )}
               </>
             ) : (
-              <Card>
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">📓</div>
-                  <h3 className="text-2xl font-poster text-vintage-text mb-2">
-                    No Journal Entries Yet
-                  </h3>
-                  <p className="text-vintage-text max-w-md mx-auto">
-                    Your completed standup and retrospective sessions will appear here. Click on a wellness notification to start a session and add your first journal entry.
-                  </p>
-                </div>
-              </Card>
+              <div className="text-center py-12">
+                <div className="text-4xl mb-3">📓</div>
+                <h3 className="text-xl font-poster text-vintage-text mb-1">No Journal Entries Yet</h3>
+                <p className="font-serif text-sm text-vintage-text/40 italic max-w-md mx-auto">
+                  Completed standup and retrospective sessions will appear here as field journal entries.
+                </p>
+              </div>
             )}
           </div>
         </div>

@@ -19,10 +19,10 @@ export const SESSION_TYPE_CONFIG = {
   standup: {
     icon: '🌅',
     label: 'Morning Standup',
-    bgColor: 'bg-sunset',
-    borderColor: 'border-sunset-dark',
+    bgColor: 'bg-mustard',
+    borderColor: 'border-mustard-dark',
     textColor: 'text-cream',
-    color: 'text-sunset'
+    color: 'text-mustard'
   },
   retro: {
     icon: '🌙',

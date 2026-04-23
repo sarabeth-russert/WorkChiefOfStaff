@@ -14,6 +14,7 @@ const Medic = lazy(() => import('./pages/Medic'));
 const BaseCamp = lazy(() => import('./pages/BaseCamp'));
 const OutboundPassage = lazy(() => import('./pages/OutboundPassage'));
 const Settings = lazy(() => import('./pages/Settings'));
+const FieldTraining = lazy(() => import('./pages/FieldTraining'));
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
               <Route path="medic" element={<Medic />} />
               <Route path="base-camp" element={<BaseCamp />} />
               <Route path="outbound-passage" element={<OutboundPassage />} />
+              <Route path="field-training" element={<FieldTraining />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

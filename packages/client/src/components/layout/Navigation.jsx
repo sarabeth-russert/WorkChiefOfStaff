@@ -45,7 +45,8 @@ const Navigation = () => {
       label: 'Operations',
       items: [
         { path: '/trading-post', label: 'Trading Post', description: 'Apps & Services' },
-        { path: '/medic', label: 'Medic', description: 'Wellness' }
+        { path: '/medic', label: 'Medic', description: 'Wellness' },
+        { path: '/field-training', label: 'Field Training', description: 'Training' }
       ]
     }
   };

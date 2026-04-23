@@ -13,6 +13,9 @@ import notificationScheduler from '../wellness/NotificationScheduler.js';
 import habitStore from '../habits/HabitStore.js';
 import agendaStore from '../habits/AgendaStore.js';
 import briefingInsights from '../briefing/BriefingInsights.js';
+import trainingStore from '../training/TrainingStore.js';
+import drillGenerator from '../training/DrillGenerator.js';
+import drillScorer from '../training/DrillScorer.js';
 
 const router = express.Router();
 
@@ -2713,6 +2716,66 @@ router.post('/focus/sessions/:id/complete', (req, res) => {
     logger.error('Error completing focus session', error);
     res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// ══════════════════════════════════════════════
+// FIELD TRAINING (Cognitive Drills)
+// ══════════════════════════════════════════════
+
+// Get training config
+router.get('/training/config', (req, res) => {
+  res.json({ success: true, config: trainingStore.getConfig() });
+});
+
+// Update training config
+router.put('/training/config', (req, res) => {
+  const config = trainingStore.updateConfig(req.body);
+  res.json({ success: true, config });
+});
+
+// Generate a new training session (drills)
+router.post('/training/session/start', (req, res) => {
+  try {
+    const { mode = 'quick', domain } = req.body;
+    const config = trainingStore.getConfig();
+    const drills = drillGenerator.generateSession(config, mode, domain);
+    res.json({ success: true, drills });
+  } catch (error) {
+    logger.error('Error generating training session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Score and save a completed session
+router.post('/training/session/score', async (req, res) => {
+  try {
+    const { drills, answers, duration } = req.body;
+    const { overallScore, drillResults, domainScores } = await drillScorer.scoreSession(drills, answers);
+
+    const session = trainingStore.addSession({
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+      date: new Date().toISOString().split('T')[0],
+      timestamp: new Date().toISOString(),
+      duration,
+      overallScore,
+      drillResults,
+      domainScores
+    });
+
+    res.json({ success: true, session });
+  } catch (error) {
+    logger.error('Error scoring training session', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Get session history
+router.get('/training/sessions', (req, res) => {
+  const limit = parseInt(req.query.limit) || 30;
+  const sessions = trainingStore.getSessions(limit);
+  const stats = trainingStore.getStats();
+  const todaySession = trainingStore.getTodaySession();
+  res.json({ success: true, sessions, stats, todayCompleted: !!todaySession });
 });
 
 export default router;
