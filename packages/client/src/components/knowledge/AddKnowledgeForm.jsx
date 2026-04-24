@@ -38,7 +38,7 @@ const AddKnowledgeForm = ({ onSubmit, onCancel }) => {
   return (
     <Card>
       <h3 className="text-2xl font-poster text-vintage-text mb-4">
-        Add Knowledge Item
+        File New Record
       </h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
@@ -127,7 +127,7 @@ const AddKnowledgeForm = ({ onSubmit, onCancel }) => {
             </Button>
           )}
           <Button type="submit" variant="primary">
-            Add Item
+            File Record
           </Button>
         </div>
       </form>

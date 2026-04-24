@@ -1,105 +1,81 @@
 import React from 'react';
-import { Card, CheckIcon } from '../ui';
 
 const IssueCard = ({ issue }) => {
-  const getStatusColor = (statusName) => {
-    const status = statusName?.toLowerCase() || '';
-    if (status.includes('done') || status.includes('closed')) {
-      return 'bg-jungle text-cream';
-    } else if (status.includes('progress') || status.includes('dev')) {
-      return 'bg-teal text-cream';
-    } else if (status.includes('review')) {
-      return 'bg-mustard text-vintage-text';
-    } else {
-      return 'bg-sand-dark text-vintage-text';
+  const getPriorityDot = (priorityName) => {
+    const p = (priorityName || '').toLowerCase();
+    if (p.includes('highest') || p.includes('critical')) return 'bg-terracotta-dark';
+    if (p.includes('high')) return 'bg-terracotta';
+    if (p.includes('medium')) return 'bg-mustard';
+    if (p.includes('low')) return 'bg-teal';
+    return 'bg-sand-dark';
+  };
+
+  const getTypeIcon = (typeName) => {
+    switch (typeName) {
+      case 'Bug': return '\u{1F41B}';
+      case 'Story': return '\u{1F4D6}';
+      case 'Epic': return '\u{1F3AF}';
+      default: return null;
     }
   };
 
-  const getPriorityIcon = (priorityName) => {
-    const priority = priorityName?.toLowerCase() || '';
-    if (priority.includes('highest') || priority.includes('critical')) return '🔴';
-    if (priority.includes('high')) return '🟠';
-    if (priority.includes('medium')) return '🟡';
-    if (priority.includes('low')) return '🔵';
-    return '⚪';
-  };
-
-  const openInJira = () => {
-    // Extract domain from issue self URL
-    const selfUrl = issue.self;
-    const match = selfUrl.match(/https:\/\/([^\/]+)\//);
+  const openDossier = () => {
+    const match = issue.self?.match(/https:\/\/([^\/]+)\//);
     if (match) {
-      const domain = match[1];
-      window.open(`https://${domain}/browse/${issue.key}`, '_blank');
+      window.open(`https://${match[1]}/browse/${issue.key}`, '_blank');
     }
   };
+
+  const typeIcon = getTypeIcon(issue.fields.issuetype?.name);
+  const description = typeof issue.fields.description === 'string'
+    ? issue.fields.description
+    : issue.fields.description?.content?.[0]?.content?.[0]?.text || '';
 
   return (
-    <Card variant="canvas" className="border-teal hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">
-              {issue.fields.issuetype?.name === 'Bug' ? '🐛' :
-               issue.fields.issuetype?.name === 'Story' ? '📖' :
-               issue.fields.issuetype?.name === 'Task' ? <CheckIcon size="w-6 h-6" className="text-jungle" /> :
-               issue.fields.issuetype?.name === 'Epic' ? '🎯' : '📝'}
-            </span>
-            <span
-              className="font-mono text-sm text-terracotta hover:text-terracotta-dark cursor-pointer"
-              onClick={openInJira}
-            >
-              {issue.key}
-            </span>
-            <span
-              className={`px-2 py-1 rounded text-xs font-ui uppercase ${getStatusColor(
-                issue.fields.status?.name
-              )}`}
-            >
-              {issue.fields.status?.name || 'Unknown'}
-            </span>
-          </div>
-          <h3 className="text-xl font-poster text-vintage-text mb-2">
-            {issue.fields.summary}
-          </h3>
+    <div
+      className="bg-cream rounded border border-sand-dark/20 px-3 py-2.5 hover:shadow-vintage-pressed transition-shadow cursor-pointer group"
+      onClick={openDossier}
+    >
+      {/* Top row: type icon + key + priority dot */}
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-1.5">
+          {typeIcon && <span className="text-sm">{typeIcon}</span>}
+          <span className="font-mono text-[11px] text-terracotta">
+            {issue.key}
+          </span>
         </div>
-        <span className="text-2xl">{getPriorityIcon(issue.fields.priority?.name)}</span>
+        <div
+          className={`w-2 h-2 rounded-full ${getPriorityDot(issue.fields.priority?.name)}`}
+          title={issue.fields.priority?.name || 'None'}
+        />
       </div>
 
-      {issue.fields.description && (
-        <p className="text-sm text-vintage-text opacity-80 mb-3 line-clamp-2">
-          {typeof issue.fields.description === 'string'
-            ? issue.fields.description
-            : issue.fields.description?.content?.[0]?.content?.[0]?.text || ''}
+      {/* Title — dominant */}
+      <h4 className="text-sm font-poster text-vintage-text leading-snug mb-1">
+        {issue.fields.summary}
+      </h4>
+
+      {/* Description — secondary, quiet */}
+      {description && (
+        <p className="text-[11px] text-vintage-text/50 leading-relaxed line-clamp-2 mb-1.5">
+          {description}
         </p>
       )}
 
-      <div className="flex items-center justify-between text-xs text-vintage-text opacity-70">
-        <div>
-          <span className="font-ui uppercase">Type:</span>{' '}
-          {issue.fields.issuetype?.name || 'Unknown'}
-        </div>
-        {issue.fields.assignee && (
-          <div>
-            <span className="font-ui uppercase">Assignee:</span>{' '}
+      {/* Footer — minimal metadata + hover action */}
+      <div className="flex items-center justify-between">
+        {issue.fields.assignee ? (
+          <span className="text-[10px] font-ui text-vintage-text/35 uppercase tracking-wide truncate max-w-[60%]">
             {issue.fields.assignee.displayName}
-          </div>
+          </span>
+        ) : (
+          <span />
         )}
+        <span className="text-[10px] font-ui text-terracotta/50 uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+          Open Dossier &rarr;
+        </span>
       </div>
-
-      {issue.fields.updated && (
-        <div className="mt-2 text-xs text-vintage-text opacity-60">
-          Updated: {new Date(issue.fields.updated).toLocaleDateString()}
-        </div>
-      )}
-
-      <button
-        onClick={openInJira}
-        className="mt-3 text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark transition-colors"
-      >
-        Open in Jira →
-      </button>
-    </Card>
+    </div>
   );
 };
 

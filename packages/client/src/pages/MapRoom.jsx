@@ -99,58 +99,51 @@ const MapRoom = () => {
         </p>
       </div>
 
-      {/* Stats */}
+      {/* Catalog instruments */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card variant="canvas" className="text-center border-teal">
-            <div className="text-4xl mb-2">📚</div>
-            <h3 className="text-3xl font-poster text-vintage-text mb-1">
-              {stats.totalItems}
-            </h3>
-            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-              Total Items
-            </p>
-          </Card>
-
-          <Card variant="canvas" className="text-center border-jungle">
-            <div className="text-4xl mb-2">🗂️</div>
-            <h3 className="text-3xl font-poster text-vintage-text mb-1">
-              {stats.categories.length}
-            </h3>
-            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-              Categories
-            </p>
-          </Card>
-
-          <Card variant="canvas" className="text-center border-mustard">
-            <div className="text-4xl mb-2">🏷️</div>
-            <h3 className="text-3xl font-poster text-vintage-text mb-1">
-              {stats.tags.length}
-            </h3>
-            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-              Unique Tags
-            </p>
-          </Card>
-
-          <Card variant="canvas" className="text-center border-sunset">
-            <div className="text-4xl mb-2">⭐</div>
-            <h3 className="text-3xl font-poster text-vintage-text mb-1">
-              {stats.mostAccessed[0]?.accessCount || 0}
-            </h3>
-            <p className="font-ui uppercase text-sm text-vintage-text opacity-70">
-              Most Accessed
-            </p>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-cream/60 rounded-lg border border-sand-dark/30 px-4 py-3 text-center">
+            <div className="text-2xl mb-1">{'\u{1F4DA}'}</div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-0.5">{stats.totalItems}</h3>
+            <p className="font-ui uppercase text-[10px] tracking-widest text-vintage-text/50">Volumes Cataloged</p>
+          </div>
+          <div className="bg-cream/60 rounded-lg border border-sand-dark/30 px-4 py-3 text-center">
+            <div className="text-2xl mb-1">{'\u{1F5C4}'}</div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-0.5">{stats.categories.length}</h3>
+            <p className="font-ui uppercase text-[10px] tracking-widest text-vintage-text/50">Subject Shelves</p>
+          </div>
+          <div className="bg-cream/60 rounded-lg border border-sand-dark/30 px-4 py-3 text-center">
+            <div className="text-2xl mb-1">{'\u{1F3F7}'}</div>
+            <h3 className="text-3xl font-poster text-vintage-text mb-0.5">{stats.tags.length}</h3>
+            <p className="font-ui uppercase text-[10px] tracking-widest text-vintage-text/50">Expedition Tags</p>
+          </div>
+          <div className="bg-cream/60 rounded-lg border border-sand-dark/30 px-4 py-3 text-center">
+            <div className="text-2xl mb-1">{'\u{2B50}'}</div>
+            {stats.mostAccessed[0]?.accessCount > 0 ? (
+              <h3 className="text-3xl font-poster text-vintage-text mb-0.5">{stats.mostAccessed[0].accessCount}</h3>
+            ) : (
+              <h3 className="text-2xl font-serif text-vintage-text/20 italic mb-0.5">&mdash;</h3>
+            )}
+            <p className="font-ui uppercase text-[10px] tracking-widest text-vintage-text/50">Most Consulted</p>
+            {!stats.mostAccessed[0]?.accessCount && (
+              <p className="font-serif text-[10px] text-vintage-text/25 italic mt-1">No featured references yet</p>
+            )}
+          </div>
         </div>
       )}
 
-      {/* Search and Add */}
-      <div className="flex gap-4">
-        <form onSubmit={handleSearch} className="flex-1 flex gap-2">
+      {/* Archive Query — dossier strip with floating label */}
+      <div className="relative border-2 border-sand-dark/30 rounded-lg bg-cream/40 px-5 py-4 mt-2">
+        <div className="absolute -top-3 left-5">
+          <span className="bg-sand px-3 py-0.5 font-ui text-[10px] uppercase tracking-[0.2em] text-vintage-text/50 border border-sand-dark/20 rounded-sm">
+            Archive Query
+          </span>
+        </div>
+        <form onSubmit={handleSearch} className="flex gap-3 items-center">
           <Input
             value={localSearchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
-            placeholder="Search knowledge with semantic AI search..."
+            placeholder="Search the archives with semantic AI..."
             className="flex-1"
           />
           <Button type="submit">Search</Button>
@@ -166,13 +159,15 @@ const MapRoom = () => {
               Clear
             </Button>
           )}
+          <div className="w-px h-8 bg-sand-dark/20 hidden sm:block" />
+          <Button
+            variant="primary"
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="whitespace-nowrap"
+          >
+            {showAddForm ? 'Cancel' : '+ File Record'}
+          </Button>
         </form>
-        <Button
-          variant="primary"
-          onClick={() => setShowAddForm(!showAddForm)}
-        >
-          {showAddForm ? 'Cancel' : '+ Add Item'}
-        </Button>
       </div>
 
       {/* Error Display */}
@@ -200,8 +195,8 @@ const MapRoom = () => {
       {/* Search Results Info */}
       {searchQuery && (
         <div className="text-center">
-          <p className="text-vintage-text">
-            Found {searchResults.length} results for <strong>"{searchQuery}"</strong>
+          <p className="font-serif text-vintage-text/70 text-sm italic">
+            {searchResults.length} record{searchResults.length !== 1 ? 's' : ''} retrieved for <strong>"{searchQuery}"</strong>
           </p>
         </div>
       )}
@@ -252,11 +247,11 @@ const MapRoom = () => {
       ) : displayItems.length === 0 ? (
         <Card>
           <div className="text-center py-8">
-            <p className="text-vintage-text mb-4">
-              {searchQuery ? 'No items found matching your search.' : 'No knowledge items yet.'}
+            <p className="font-serif text-vintage-text/70 italic mb-4">
+              {searchQuery ? 'No records match your query.' : 'The archive is empty.'}
             </p>
-            <p className="text-sm text-vintage-text opacity-70">
-              {searchQuery ? 'Try a different search term.' : 'Add your first item to start building your knowledge base.'}
+            <p className="text-sm text-vintage-text/50">
+              {searchQuery ? 'Try a different search term.' : 'File your first record to begin cataloging.'}
             </p>
           </div>
         </Card>

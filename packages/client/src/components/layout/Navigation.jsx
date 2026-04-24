@@ -56,22 +56,22 @@ const Navigation = () => {
   };
 
   const navLinkClass = (isActive) => `
-    px-4 py-2 font-ui uppercase tracking-wide text-sm
-    transition-all duration-150 border-2 rounded whitespace-nowrap
+    px-4 py-2 font-ui uppercase tracking-normal text-sm
+    transition-all duration-150 rounded-sm whitespace-nowrap border-2
     ${isActive
-      ? 'bg-cream text-jungle-dark border-cream shadow-vintage-pressed translate-y-0.5'
-      : 'bg-transparent text-cream border-jungle-light hover:bg-jungle-light hover:-translate-y-0.5 hover:shadow-vintage'
+      ? 'bg-cream text-jungle-dark border-cream shadow-vintage-pressed border-b-mustard'
+      : 'text-cream/80 border-cream/10 hover:text-cream hover:border-cream/20 hover:bg-cream/5'
     }
   `;
 
   const mobileNavLinkClass = (isActive) => `
-    block px-4 py-3 font-ui uppercase tracking-wide text-sm border-b-2 border-jungle-light
+    block px-4 py-3 font-ui uppercase tracking-normal text-sm border-b border-cream/10
     transition-colors
-    ${isActive ? 'bg-cream text-jungle-dark' : 'text-cream hover:bg-jungle-light'}
+    ${isActive ? 'bg-cream/90 text-jungle-dark border-l-2 border-l-mustard' : 'text-cream/80 hover:bg-cream/8'}
   `;
 
   return (
-    <nav className="bg-jungle border-b-4 border-jungle-dark shadow-vintage">
+    <nav className="bg-jungle shadow-vintage relative" style={{ backgroundImage: 'linear-gradient(to bottom, transparent 0%, rgba(58,95,71,0.15) 100%)' }}>
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
@@ -97,100 +97,112 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex gap-2 items-center">
-            {mainNavItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={navLinkClass(location.pathname === item.path)}
-              >
-                {item.label}
-              </Link>
-            ))}
-
-            {Object.entries(dropdownGroups).map(([key, group]) => {
-              const isOpen = openDropdown === key;
-              const hasActiveItem = group.items.some(item => location.pathname === item.path);
-
-              return (
-                <div
-                  key={key}
-                  className="relative"
-                  onMouseEnter={() => setOpenDropdown(key)}
-                  onMouseLeave={() => setOpenDropdown(null)}
+          <div className="hidden lg:flex items-center">
+            {/* Primary destinations */}
+            <div className="flex gap-1 items-center">
+              {mainNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={navLinkClass(location.pathname === item.path)}
                 >
-                  <button
-                    onClick={() => toggleDropdown(key)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') setOpenDropdown(null);
-                      if (e.key === 'ArrowDown') {
-                        e.preventDefault();
-                        setOpenDropdown(key);
-                      }
-                    }}
-                    aria-expanded={isOpen}
-                    aria-haspopup="true"
-                    className={`
-                      px-4 py-2 font-ui uppercase tracking-wide text-sm
-                      transition-all duration-150 border-2 rounded whitespace-nowrap
-                      flex items-center gap-2
-                      ${hasActiveItem
-                        ? 'bg-cream text-jungle-dark border-cream shadow-vintage-pressed translate-y-0.5'
-                        : 'bg-transparent text-cream border-jungle-light hover:bg-jungle-light hover:-translate-y-0.5 hover:shadow-vintage'
-                      }
-                    `}
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+
+            {/* Divider between primary and utility */}
+            <div className="w-px h-6 bg-cream/15 mx-3" />
+
+            {/* Utility destinations */}
+            <div className="flex gap-1 items-center">
+              {Object.entries(dropdownGroups).map(([key, group]) => {
+                const isOpen = openDropdown === key;
+                const hasActiveItem = group.items.some(item => location.pathname === item.path);
+
+                return (
+                  <div
+                    key={key}
+                    className="relative"
+                    onMouseEnter={() => setOpenDropdown(key)}
+                    onMouseLeave={() => setOpenDropdown(null)}
                   >
-                    <span>{group.label}</span>
-                    <span className={`transition-transform text-xs ${isOpen ? 'rotate-180' : ''}`}>&#9660;</span>
-                  </button>
-
-                  {isOpen && (
-                    <div
-                      className="absolute top-full right-0 bg-cream border-4 border-jungle-dark shadow-vintage-strong rounded-lg overflow-hidden z-50 min-w-[240px]"
-                      role="menu"
+                    <button
+                      onClick={() => toggleDropdown(key)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') setOpenDropdown(null);
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setOpenDropdown(key);
+                        }
+                      }}
+                      aria-expanded={isOpen}
+                      aria-haspopup="true"
+                      className={`
+                        px-4 py-2 font-ui uppercase tracking-normal text-sm
+                        transition-all duration-150 rounded-sm whitespace-nowrap border-2
+                        flex items-center gap-1.5
+                        ${hasActiveItem
+                          ? 'bg-cream text-jungle-dark border-cream shadow-vintage-pressed border-b-mustard'
+                          : 'text-cream/80 border-cream/10 hover:text-cream hover:border-cream/20 hover:bg-cream/5'
+                        }
+                      `}
                     >
-                      {group.items.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        return (
-                          <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`
-                              block px-4 py-3 border-b-2 border-sand
-                              transition-all duration-150
-                              ${isActive
-                                ? 'bg-jungle text-cream'
-                                : 'bg-cream text-vintage-text hover:bg-sand'
-                              }
-                            `}
-                          >
-                            <div className="font-ui uppercase tracking-wide text-sm font-bold">
-                              {item.label}
-                            </div>
-                            <div className="font-serif text-xs opacity-70 mt-1">
-                              {item.description}
-                            </div>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      <span>{group.label}</span>
+                      <span className={`transition-transform text-[10px] opacity-60 ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+                    </button>
 
-            <Link
-              to="/settings"
-              className={navLinkClass(location.pathname === '/settings')}
-            >
-              Settings
-            </Link>
+                    {isOpen && (
+                      <div
+                        className="absolute top-full right-0 pt-1 z-50 min-w-[220px]"
+                        role="menu"
+                      >
+                      <div className="bg-cream border-2 border-sand-dark/40 shadow-vintage rounded-sm overflow-hidden">
+                        <div className="h-0.5 bg-mustard/40" />
+                        {group.items.map((item) => {
+                          const isActive = location.pathname === item.path;
+                          return (
+                            <Link
+                              key={item.path}
+                              to={item.path}
+                              className={`
+                                block px-4 py-2.5 border-b border-sand/60
+                                transition-all duration-150
+                                ${isActive
+                                  ? 'bg-jungle text-cream'
+                                  : 'bg-cream text-vintage-text hover:bg-sand/40'
+                                }
+                              `}
+                            >
+                              <div className="font-ui uppercase tracking-normal text-sm">
+                                {item.label}
+                              </div>
+                              <div className="font-serif text-[11px] opacity-50 mt-0.5">
+                                {item.description}
+                              </div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+
+              <Link
+                to="/settings"
+                className={navLinkClass(location.pathname === '/settings')}
+              >
+                Settings
+              </Link>
+            </div>
           </div>
 
           {/* Mobile Hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden flex flex-col gap-1.5 p-2 border-2 border-jungle-light rounded hover:bg-jungle-light transition-colors"
+            className="lg:hidden flex flex-col gap-1.5 p-2 rounded-sm hover:bg-cream/8 transition-colors"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileOpen}
           >
@@ -203,7 +215,8 @@ const Navigation = () => {
 
       {/* Mobile Menu */}
       {mobileOpen && (
-        <div ref={mobileMenuRef} className="lg:hidden border-t-2 border-jungle-light bg-jungle">
+        <div ref={mobileMenuRef} className="lg:hidden border-t border-jungle-dark bg-jungle">
+          {/* Primary */}
           {mainNavItems.map((item) => (
             <Link
               key={item.path}
@@ -214,31 +227,39 @@ const Navigation = () => {
             </Link>
           ))}
 
+          {/* Divider */}
+          <div className="flex items-center gap-2 px-4 py-1.5">
+            <div className="h-px flex-1 bg-cream/10" />
+            <span className="text-cream/15 text-[8px]">✦</span>
+            <div className="h-px flex-1 bg-cream/10" />
+          </div>
+
+          {/* Utility */}
           {Object.entries(dropdownGroups).map(([key, group]) => (
             <div key={key}>
               <button
                 onClick={() => toggleDropdown(openDropdown === key ? null : key)}
-                className="w-full flex items-center justify-between px-4 py-3 font-ui uppercase tracking-wide text-sm text-cream border-b-2 border-jungle-light hover:bg-jungle-light transition-colors"
+                className="w-full flex items-center justify-between px-4 py-3 font-ui uppercase tracking-normal text-sm text-cream/80 border-b border-cream/10 hover:bg-cream/8 transition-colors"
               >
                 <span>{group.label}</span>
-                <span className={`transition-transform text-xs ${openDropdown === key ? 'rotate-180' : ''}`}>&#9660;</span>
+                <span className={`transition-transform text-[10px] opacity-50 ${openDropdown === key ? 'rotate-180' : ''}`}>▾</span>
               </button>
               {openDropdown === key && (
-                <div className="bg-jungle-dark">
+                <div className="bg-jungle-dark/50">
                   {group.items.map((item) => (
                     <Link
                       key={item.path}
                       to={item.path}
                       className={`
-                        block pl-8 pr-4 py-3 border-b border-jungle transition-colors
+                        block pl-8 pr-4 py-2.5 border-b border-cream/5 transition-colors
                         ${location.pathname === item.path
-                          ? 'bg-cream text-jungle-dark'
-                          : 'text-cream hover:bg-jungle'
+                          ? 'bg-cream/90 text-jungle-dark'
+                          : 'text-cream/70 hover:bg-cream/8'
                         }
                       `}
                     >
-                      <div className="font-ui uppercase tracking-wide text-sm">{item.label}</div>
-                      <div className="font-serif text-xs opacity-70">{item.description}</div>
+                      <div className="font-ui uppercase tracking-normal text-sm">{item.label}</div>
+                      <div className="font-serif text-[11px] opacity-50">{item.description}</div>
                     </Link>
                   ))}
                 </div>
@@ -254,6 +275,8 @@ const Navigation = () => {
           </Link>
         </div>
       )}
+      {/* Bottom edge */}
+      <div className="h-1 bg-jungle-dark" />
     </nav>
   );
 };
