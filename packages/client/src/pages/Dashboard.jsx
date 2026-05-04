@@ -105,6 +105,12 @@ const Dashboard = () => {
     return 'Good Evening, Adventurer';
   };
 
+  const getExpeditionDay = () => {
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    return Math.floor((now - start) / (1000 * 60 * 60 * 24));
+  };
+
   const getReadinessAdvice = (score) => {
     if (!score) return null;
     if (score >= 85) return { text: 'You\'re in peak form — tackle your hardest challenge today.', tone: 'excellent' };
@@ -242,17 +248,20 @@ const Dashboard = () => {
         <p className="text-xl text-vintage-text opacity-70 font-serif max-w-2xl mx-auto">
           {briefing?.weather || 'Your daily expedition briefing is ready.'}
         </p>
+        <p className="text-xs font-ui uppercase text-vintage-text opacity-40 tracking-widest mt-2">
+          Day {getExpeditionDay()} of current expedition
+        </p>
       </div>
 
-      {/* Cross-Feature Insights */}
+      {/* Cross-Feature Insights — Advisory Notices */}
       {insights.length > 0 && (
         <div className="space-y-2">
           {insights.map((insight, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 px-5 py-3 rounded-lg border-2 border-mustard bg-mustard bg-opacity-5"
+              className="flex items-start gap-3 px-5 py-3 rounded-lg border-2 border-sunset bg-sunset bg-opacity-[0.07] border-l-4 border-l-sunset"
             >
-              <span className="text-lg flex-shrink-0 mt-0.5">
+              <span className="text-base flex-shrink-0 mt-0.5 w-6 h-6 rounded-full bg-sunset bg-opacity-15 flex items-center justify-center">
                 {insight.type === 'energy-protect' ? '\uD83D\uDEE1\uFE0F'
                   : insight.type === 'meeting-load' || insight.type === 'back-to-back' ? '\uD83D\uDCC5'
                   : insight.type === 'stale-ticket' || insight.type === 'wip-limit' ? '\uD83C\uDFAB'
@@ -262,7 +271,7 @@ const Dashboard = () => {
                   : insight.type === 'clear-schedule' ? '\uD83C\uDFAF'
                   : '\uD83D\uDCA1'}
               </span>
-              <p className="font-serif text-sm text-vintage-text leading-relaxed">
+              <p className="font-serif text-sm text-vintage-text leading-relaxed font-medium">
                 {insight.text}
               </p>
             </div>
@@ -277,75 +286,52 @@ const Dashboard = () => {
         <Card variant="canvas" className={wellness && advice ? getToneBg(advice.tone) : ''}>
           {wellness && advice && (
             <div>
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-2">
-                  <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-36 h-36" />
-                </div>
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                    Wellness
-                  </h2>
-                  <Link to="/medic">
-                    <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
-                      Full Vitals
-                    </span>
-                  </Link>
+              <div className="flex items-center gap-3 mb-4">
+                <DashIcon src="/images/dashboard/wellness.png" alt="Wellness" fallback="&#x1F49A;" size="w-20 h-20" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
+                      Wellness
+                    </h2>
+                    <Link to="/medic">
+                      <span className="text-sm font-ui uppercase text-terracotta hover:text-terracotta-dark">
+                        Full Vitals
+                      </span>
+                    </Link>
+                  </div>
                 </div>
               </div>
 
-              {/* Scores Row */}
-              <div className="flex items-center justify-around mb-4">
+              {/* Score + secondaries inline */}
+              <div className="flex items-baseline gap-4 mb-3">
                 {wellness.readiness && (
-                  <div className="text-center">
-                    <div className={`text-4xl font-poster ${getToneColor(advice.tone)}`}>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-4xl font-poster ${getToneColor(advice.tone)}`}>
                       {wellness.readiness}
-                    </div>
-                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
+                    </span>
+                    <span className="text-xs font-ui uppercase text-vintage-text opacity-50">
                       Readiness
-                    </div>
+                    </span>
                   </div>
                 )}
-                {wellness.sleep && (
-                  <div className="text-center">
-                    <div className="text-2xl font-poster text-vintage-text opacity-80">
-                      {wellness.sleep}
-                    </div>
-                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                      Sleep
-                      {wellness.sleepDuration && (
-                        <span className="block text-vintage-text opacity-50">
-                          {formatSleepDuration(wellness.sleepDuration)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {wellness.activity && (
-                  <div className="text-center">
-                    <div className="text-2xl font-poster text-vintage-text opacity-80">
-                      {wellness.activity}
-                    </div>
-                    <div className="text-xs font-ui uppercase text-vintage-text opacity-60 mt-1">
-                      Activity
-                    </div>
-                  </div>
-                )}
+                <div className="flex items-baseline gap-3 text-vintage-text opacity-60">
+                  {wellness.sleep && (
+                    <span className="text-sm font-ui">
+                      Sleep {wellness.sleep}
+                    </span>
+                  )}
+                  {wellness.activity && (
+                    <span className="text-sm font-ui">
+                      Activity {wellness.activity}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Advice */}
               <p className={`text-sm font-serif ${getToneColor(advice.tone)}`}>
                 {advice.text}
               </p>
-              {wellness.date === 'yesterday' && (
-                <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
-                  Based on yesterday's data
-                </p>
-              )}
-              {wellness.source === 'standup' && (
-                <p className="text-xs text-vintage-text opacity-50 mt-2 font-ui uppercase">
-                  From your morning standup
-                </p>
-              )}
 
               {/* Divider before habits */}
               <div className="h-px w-full bg-vintage-text opacity-20 my-4" />
@@ -364,54 +350,69 @@ const Dashboard = () => {
 
         {/* Row 1, Col 2: Trail Notes (or On Deck / No Data fallback) */}
         <div className="space-y-6">
-          {(lastRetro?.notesForTomorrow || todayPlan) && (
-            <Card variant="canvas" className="border-mustard">
-              <div className="text-center mb-4">
-                <div className="flex justify-center mb-2">
-                  <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-36 h-36" />
-                </div>
-                <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
-                  Trail Notes
-                </h2>
+          <Card variant="canvas" className="border-mustard">
+            <div className="text-center mb-4">
+              <div className="flex justify-center mb-2">
+                <DashIcon src="/images/dashboard/trail-notes.png" alt="Trail Notes" fallback="&#x1F4D3;" size="w-36 h-36" />
               </div>
+              <h2 className="text-2xl font-poster text-vintage-text text-letterpress">
+                Trail Notes
+              </h2>
+            </div>
 
-              {todayPlan ? (
-                <div>
-                  <h3 className="text-xs font-ui uppercase text-jungle mb-2 tracking-wide">
-                    Today's Plan
-                  </h3>
-                  <p className="font-serif text-vintage-text text-sm leading-relaxed">
-                    {todayPlan}
-                  </p>
+            {todayPlan ? (
+              <div>
+                <h3 className="text-xs font-ui uppercase text-jungle mb-2 tracking-wide">
+                  Today's Plan
+                </h3>
+                <p className="font-serif text-vintage-text text-sm leading-relaxed">
+                  {todayPlan}
+                </p>
+              </div>
+            ) : lastRetro?.notesForTomorrow ? (
+              <div>
+                <h3 className="text-xs font-ui uppercase text-mustard-dark mb-2 tracking-wide">
+                  From Last Evening's Retro
+                </h3>
+                <p className="font-serif text-vintage-text text-sm leading-relaxed">
+                  {lastRetro.notesForTomorrow}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-mustard bg-opacity-10 border-2 border-dashed border-mustard flex items-center justify-center">
+                  <span className="text-xl opacity-60">&#x1F4D4;</span>
                 </div>
-              ) : lastRetro?.notesForTomorrow && (
-                <div>
-                  <h3 className="text-xs font-ui uppercase text-mustard-dark mb-2 tracking-wide">
-                    From Last Evening's Retro
-                  </h3>
-                  <p className="font-serif text-vintage-text text-sm leading-relaxed">
-                    {lastRetro.notesForTomorrow}
-                  </p>
-                </div>
-              )}
+                <p className="font-serif text-sm text-vintage-text opacity-60 leading-relaxed">
+                  No evening retro logged.
+                </p>
+                <p className="font-serif text-sm text-vintage-text opacity-45 mt-1 italic">
+                  Leave a dawn intention for today.
+                </p>
+                <Link to="/base-camp" className="inline-block mt-4">
+                  <Button variant="outline" size="sm">
+                    Start Morning Standup
+                  </Button>
+                </Link>
+              </div>
+            )}
 
-              {lastRetro?.accomplishments?.length > 0 && (
-                <div className="mt-4 pt-3 border-t-2 border-sand-dark">
-                  <h3 className="text-xs font-ui uppercase text-vintage-text opacity-50 mb-2 tracking-wide">
-                    Recent Wins
-                  </h3>
-                  <ul className="space-y-1">
-                    {lastRetro.accomplishments.slice(0, 4).map((item, i) => (
-                      <li key={i} className="font-serif text-vintage-text text-sm opacity-70 flex items-start gap-2">
-                        <span className="text-jungle mt-0.5 flex-shrink-0">&#x2713;</span>
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </Card>
-          )}
+            {lastRetro?.accomplishments?.length > 0 && (
+              <div className="mt-4 pt-3 border-t-2 border-sand-dark">
+                <h3 className="text-xs font-ui uppercase text-vintage-text opacity-50 mb-2 tracking-wide">
+                  Recent Wins
+                </h3>
+                <ul className="space-y-1">
+                  {lastRetro.accomplishments.slice(0, 4).map((item, i) => (
+                    <li key={i} className="font-serif text-vintage-text text-sm opacity-70 flex items-start gap-2">
+                      <span className="text-jungle mt-0.5 flex-shrink-0">&#x2713;</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </Card>
 
           {/* On Deck Today (Recurring Agenda) */}
           {briefing?.agendaItems?.length > 0 && (
@@ -527,6 +528,14 @@ const Dashboard = () => {
                   </div>
                 </div>
               </Link>
+
+              {/* Quick Tools divider */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="h-px flex-1 bg-sand-dark" />
+                <span className="text-[10px] font-ui uppercase text-vintage-text opacity-25 tracking-widest">Tools</span>
+                <div className="h-px flex-1 bg-sand-dark" />
+              </div>
+
               <Link to="/medic" className="block">
                 <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer">
                   <DashIcon src="/images/dashboard/medic.png" alt="Medic" fallback="&#x1F3E5;" size="w-20 h-20" />
@@ -636,6 +645,14 @@ const Dashboard = () => {
                   </div>
                 )}
               </div>
+
+              {/* Training divider */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="h-px flex-1 bg-sand-dark" />
+                <span className="text-[10px] font-ui uppercase text-vintage-text opacity-25 tracking-widest">Training</span>
+                <div className="h-px flex-1 bg-sand-dark" />
+              </div>
+
               <Link to="/field-training" className="block">
                 <div className="flex items-center gap-3 p-3 rounded-lg border-2 border-sand-dark hover:border-vintage-text transition-[border-color] cursor-pointer">
                   <DashIcon src="/images/dashboard/field-training.png" alt="Field Training" fallback="&#x1F3CB;" size="w-20 h-20" />
